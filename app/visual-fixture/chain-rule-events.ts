@@ -59,7 +59,8 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
     ev("cr-27-notice", "27", "13시 공지 방송", 0, "tag-hype"),
     // 왕관·하트가 달린 토→일 카드(2026-11-20) — 토요일 오른쪽 위 왕관이 옅어지는 끝에서도 진한지 실측. 이 달 1위.
     { ...ev("cr-27-run", "27", "주말 마라톤\n24시간 연속 방송", 1, "tag-big-server", "cr-28-run"), heartCount: 120 },
-    ev("cr-28-run", "28", "주말 마라톤\n24시간 연속 방송", 0, "tag-big-server"),
+    // 일요일 조각이 더 높다(네 줄) — 줄바뀜 끝의 곡률 실측(2026-11-23): 일요일 왼쪽 끝 아랫변이 토요일 조각 높이까지 오른다.
+    ev("cr-28-run", "28", "주말 마라톤\n24시간 연속 방송\n아침까지 달린다\n끝나고 후열", 0, "tag-big-server"),
     // 여러 날 한 장이 주를 넘는 경우(6/12 금 ~ 6/15 월) — 토 오른변·일 왼변(줄 경계)도 맞닿은 변 규칙(2026-11-20 실측).
     { ...ev("cr-span-week", "12", "주말 특집 4일 연속\n여러 날 한 장", 1, "tag-hype"), endDateKey: "2026-06-15" },
     // 6/25 — 한 칸에 세 장, 아래 두 장이 2·3위 왕관(손 올림으로 뜬 위 카드가 왕관을 덮지 않는지, 2026-11-20).
@@ -71,7 +72,8 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
     ...["11", "12", "13", "14"].map((d, i) => ev(`cr-ext-${d}`, d, `탐험 합숙 ${i + 1}일차`, 0, "tag-calm")),
 
     // 토→일 줄바뀜 색 페이드 실측(2026-11-19) — 다른 태그 색: 6/20(토)→6/21(일) 노래, 7/18(토)→7/19(일) 2색 카드.
-    ev("cr-wf-20", "20", "주말 노래 릴레이\n신청곡 1부", 0, "tag-song", "cr-wf-21"),
+    // 토요일 조각이 더 높다(네 줄) — 줄바뀜 끝의 곡률 실측(2026-11-23): 토요일 오른쪽 끝 아랫변이 일요일 조각 높이까지 오른다.
+    ev("cr-wf-20", "20", "주말 노래 릴레이\n신청곡 1부\n발라드 위주\n끝나고 잡담", 0, "tag-song", "cr-wf-21"),
     ev("cr-wf-21", "21", "주말 노래 릴레이\n신청곡 2부", 0, "tag-song"),
     { ...ev("cr-wf-18", "18", "합방 주간\n토요일 편", 0, "tag-collab", "cr-wf-19"), startsAt: "2026-07-18T20:00:00+09:00", tagIds: ["tag-collab", "tag-variety-game"], primaryTagIds: ["tag-collab", "tag-variety-game"] },
     { ...ev("cr-wf-19", "19", "합방 주간\n일요일 편", 0, "tag-collab"), startsAt: "2026-07-19T20:00:00+09:00", tagIds: ["tag-variety-game", "tag-collab"], primaryTagIds: ["tag-variety-game", "tag-collab"] },
@@ -80,6 +82,19 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
     ev("cr-29-song", "29", "20시 노래 방송\n신청곡 받아요", 1, "tag-song"),
     ev("cr-30-wow", "30", "와우 레이드\n검은바위 나락", 0, "tag-variety-game"),
     ...anywhere(),
+    // 7/26(일)~7/29(수) 이어진 나흘 + 7/27~28(월·화) 기간 안내 띠(2026-11-23 소유자): 띠가 지나는 월·화 칸의 카드만 내려앉고,
+    // 이음이 일→월에서 ~로 내려갔다가 화→수에서 올라온다. 월·화는 글이 같아 한 장 띠(둘 다 같은 깊이).
+    ...(["26", "27", "28", "29"] as const).map((d, i) => ({
+      ...ev(`cr-dip-${d}`, d, i === 1 || i === 2 ? "여름 합숙\n본 일정" : `여름 합숙\n${i === 0 ? "출발" : "돌아오는 날"}`, 0, "tag-calm", i < 3 ? `cr-dip-${["27", "28", "29"][i]}` : undefined),
+      startsAt: `2026-07-${d}T20:00:00+09:00`
+    })),
+    {
+      ...ev("cr-dip-bar", "27", "합숙 기간 안내", 0, "tag-hype"),
+      startsAt: "2026-07-27T00:00:00+09:00",
+      isSupport: true,
+      supportKind: "period" as const,
+      endDateKey: "2026-07-28"
+    },
     // 7월 첫 주 — 릴동파형(2026-11-17 소유자): 일 드래프트 → 월~수 같은 글 띠(제목 한 줄) → 목·금·토 각각 → 일 폐막식
     ...lildongpa(),
     // 7월 14~16일 — 맹든링형(2025-12 실데이터 모양): 1일차는 그날 두 번째, 2일차 다음날 혼자, 3일차는 미연결

@@ -686,8 +686,11 @@ export function assignSupportLanes<T extends PublicScheduleEvent | StudioSchedul
 
 // 칸마다 띠가 차지하는 레인 깊이(일정 목록이 그만큼 아래에서 시작한다).
 // 원칙(2026-10-05 소유자, 두 번의 왕복 끝에): **띠가 지나는 칸만** 비운다 — 띠 없는 칸에 빈 줄을 두면 칸 높이 낭비다.
-// 단 이어진 일정(멀티데이·link_next 묶음)이 지나는 칸들은 같은 주 안에서 그 묶음의 가장 깊은 칸에 맞춘다 —
-// 안 그러면 띠 있는 칸만 내려앉아 이어진 카드의 높이가 칸마다 어긋나 연결이 끊겨 보인다.
+// 단 여러 날 한 장(end_date_key — 카드 한 장이 여러 칸에 걸친다)이 지나는 칸들은 같은 주 안에서 가장 깊은 칸에 맞춘다 —
+// 한 장이라 칸마다 높이가 다를 수 없다.
+// link_next로 이어진 하루짜리 일정들은 맞추지 않는다(2026-11-23 소유자): 띠가 지나는 칸의 카드만 내려앉고, 이음이 그 자리에서
+// 부드럽게 내려갔다 올라온다(buildChainJoins가 그 틈을 step으로 잇고 useEqualChainHeights가 경계선에서 ~로 그린다).
+// 예전엔 이 묶음도 맞춰, 띠가 월·화에만 있어도 일~수 전체가 내려앉았다.
 // (한때 주 전체를 맞췄다가 이어진 일정이 없는 칸까지 비워 되돌렸다.)
 // cells는 7칸씩 한 행. 반환: 칸 인덱스 → 깊이(0이면 비우지 않음).
 export function supportDepthByCell<T extends PublicScheduleEvent | StudioScheduleEvent>(
@@ -697,7 +700,6 @@ export function supportDepthByCell<T extends PublicScheduleEvent | StudioSchedul
 ): number[] {
   const n = cells.length;
   const depth = new Array<number>(n).fill(0);
-  const indexOf = new Map(cells.map((c, i) => [c.isoDate, i] as const));
   const coverIdx = (start: string, end: string) => {
     const out: number[] = [];
     for (let i = 0; i < n; i += 1) {
@@ -713,20 +715,15 @@ export function supportDepthByCell<T extends PublicScheduleEvent | StudioSchedul
     for (const i of coverIdx(getEventDateKey(e), eventEndKey(e))) if (lane > depth[i]) depth[i] = lane;
   }
   if (!depth.some((d) => d > 0)) return depth;
-  // 2) 이어진 묶음마다 '같은 주'의 칸들을 그 묶음 최댓값으로 맞춘다(묶음끼리 칸을 공유하면 번질 수 있어 몇 번 반복).
-  const keys = buildChainKeys(events);
+  // 2) 여러 날 한 장마다 '같은 주'의 칸들을 그 최댓값으로 맞춘다(서로 칸을 공유하면 번질 수 있어 몇 번 반복).
   const groups = new Map<string, Set<number>>();
   for (const e of events) {
     if (e.isSupport) continue;
     const start = getEventDateKey(e);
     const end = eventEndKey(e);
-    const key = keys.get(e.id) ?? e.id;
-    const multi = end > start;
-    const linked = key !== e.id || Boolean(e.linkNext);
-    if (!multi && !linked) continue;
-    const idx = multi ? coverIdx(start, end) : [indexOf.get(start)].filter((i): i is number => i !== undefined);
-    for (const i of idx) {
-      const g = `${key}|${Math.floor(i / 7)}`;
+    if (!(end > start)) continue;
+    for (const i of coverIdx(start, end)) {
+      const g = `${e.id}|${Math.floor(i / 7)}`;
       if (!groups.has(g)) groups.set(g, new Set());
       groups.get(g)!.add(i);
     }
@@ -910,6 +907,9 @@ export type ChainJoin = {
   bandKey?: string; // 같은 줄 띠 묶음 — 이 키끼리 높이를 맞춘다(useEqualChainHeights)
   bandSpan?: number; // 같은 글 띠의 머리: 몇 칸 폭(≥2)
   bandHeadId?: string; // 같은 글 띠의 뒤 칸(빈 자리)이면 머리 일정 id
+  // 같은 글 띠의 머리 — 띠의 끝 칸 일정에서 다음 날로 step으로 넘어가면 그 이음. 끝 칸은 빈 자리(카드가 없다)라
+  // 화면에서는 머리 카드가 그 이음의 앞쪽 몸이 된다(fromId = 끝 칸 일정 id — 이음 열쇠는 이 id로 만든다).
+  tailStep?: { fromId: string; side: ChainJoinSide };
 };
 
 export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEvent>(
@@ -1027,6 +1027,11 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
     }
     j.bandSpan = span;
     j.flatRight = Boolean(tail.right && tail.right.kind !== "step" && !tail.right.under);
+    if (tail !== j && tail.right?.kind === "step") {
+      // 끝 칸 일정 id = 그 이음을 받는 쪽이 가리키는 상대(left.otherId).
+      const fromId = joins.get(tail.right.otherId)?.left?.otherId;
+      if (fromId) j.tailStep = { fromId, side: tail.right };
+    }
   }
   return joins;
 }

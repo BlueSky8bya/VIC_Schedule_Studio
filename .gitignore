@@ -34,3 +34,6 @@ playwright-report/
 
 # second dev server for screen captures
 .next-cap*/
+
+# 측정용 두 번째 dev 서버(NEXT_DIST_DIR)가 만드는 폴더 — 올리지 않는다(2026-11-23 실수로 한 번 올라갔다).
+.next-*/

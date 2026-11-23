@@ -23,6 +23,8 @@ const STEP_CONCAVE = 5;
 // 윗변이 한 줄로 곧은 이음(둘 다 그날 맨 위, 글 높이만 다름 — buildChainJoins level)의 아랫변 계단 — 볼록·오목을 같은 크기로
 // 크게 둥글려 두 곡선이 계단 가운데에서 만난다(~ 모양). 상한일 뿐이고 실제 반경은 계단 높이의 절반을 넘지 않는다(roundedPath).
 const STEP_SOFT = 18;
+// 두 카드가 세로로 이만큼 겹치면 기둥 없이 경계선에서 맞닿는다(stepBandPath).
+const STEP_SEAM_MIN = 6; // 12였을 때는 끄는 중 10px만 겹친 두 카드가 기둥으로 이어져 경계선과 카드 끝 사이에 틈이 보였다
 const LEVEL_EPS = 1;
 // 같은 틈을 여러 꺾인 띠가 지날 때(2026-11-23: 이어진 일정은 순서와 상관없이 잇는다 → 두 묶음이 같은 날을 지나면 생긴다)
 // 틈을 나눠 나란히 세운다 — 기둥 사이 2px, 가늘어져도 3px 아래로는 안 간다.
@@ -80,7 +82,18 @@ function fillOf(from: HTMLElement, to: HTMLElement): string {
   return from.style.backgroundColor || strokeOf(from);
 }
 
-type Pt = { x: number; y: number; r: number };
+// r = 들어오는 변 쪽으로 깎는 길이, r2 = 나가는 변 쪽(없으면 r과 같다 — 보통의 둥근 모서리). 둘이 다르면 납작한 곡선이 된다
+// (줄바뀜 끝의 아랫변이 다음 줄 조각 높이까지 완만하게 오르는 곡선).
+type Pt = { x: number; y: number; r: number; r2?: number };
+// 꼭짓점에서 두 변을 얼마나 깎을지. 보통 모서리는 두 변 모두 같은 길이(변 길이의 절반까지).
+// r2가 따로 있으면(납작한 곡선) 변마다 제 길이로 — 이웃 꼭짓점이 각진 곳이라 변 길이의 0.9까지 쓴다.
+function cornerCuts(p: Pt, l1: number, l2: number): { ra: number; rb: number } {
+  if (p.r2 === undefined) {
+    const r = Math.min(p.r, l1 / 2, l2 / 2);
+    return { ra: r, rb: r };
+  }
+  return { ra: Math.min(p.r, l1 * 0.9), rb: Math.min(p.r2, l2 * 0.9) };
+}
 // 직교 다각형의 꼭짓점을 둥글린 경로. r은 상한 — 변 길이의 절반을 넘지 않는다.
 function roundedPath(pts: Pt[]): string {
   const n = pts.length;
@@ -92,11 +105,11 @@ function roundedPath(pts: Pt[]): string {
     const p2 = pts[(i + 1) % n];
     const l1 = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1;
     const l2 = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
-    const r = Math.min(p1.r, l1 / 2, l2 / 2);
-    const ax = p1.x + ((p0.x - p1.x) / l1) * r;
-    const ay = p1.y + ((p0.y - p1.y) / l1) * r;
-    const bx = p1.x + ((p2.x - p1.x) / l2) * r;
-    const by = p1.y + ((p2.y - p1.y) / l2) * r;
+    const { ra, rb } = cornerCuts(p1, l1, l2);
+    const ax = p1.x + ((p0.x - p1.x) / l1) * ra;
+    const ay = p1.y + ((p0.y - p1.y) / l1) * ra;
+    const bx = p1.x + ((p2.x - p1.x) / l2) * rb;
+    const by = p1.y + ((p2.y - p1.y) / l2) * rb;
     d += `${i === 0 ? "M" : "L"}${f(ax)},${f(ay)} Q${f(p1.x)},${f(p1.y)} ${f(bx)},${f(by)} `;
   }
   return `${d}Z`;
@@ -104,14 +117,17 @@ function roundedPath(pts: Pt[]): string {
 
 type Box = { left: number; right: number; top: number; bottom: number };
 // 줄바뀜(토→일)으로 이어지는 바깥 끝 — 그 변은 카드처럼 평평하게 칸 끝까지 뻗고 모서리를 둥글리지 않는다.
-type FlatEnds = { left?: boolean; right?: boolean };
+// leftRise/rightRise = 그 끝에서 아랫변이 위로 굽는 높이, leftDrop/rightDrop = 윗변이 아래로 굽는 높이(shapeWrapEnds가 잰 값).
+// 없으면 예전처럼 각진 끝.
+type FlatEnds = { left?: boolean; right?: boolean; leftRise?: number; rightRise?: number; leftDrop?: number; rightDrop?: number };
 type Span = { top: number; bottom: number };
 
 // 이어진 한 줄 블록의 바깥 윤곽 — 몸(카드·띠 묶음)들이 왼→오른쪽으로 서 있고, 이웃한 몸 사이는 기둥(꺾인 띠, xa~xb)이
 // 잇는다. 몸이 하나면 둥근 사각형, 둘이면 꺾인 띠 한 쌍, 그 이상도 같은 규칙. 꺾인 띠 몸통·클릭 테두리·손 올림 빛이
 // 전부 이 한 함수를 쓴다(2026-11-18 소유자: "모양을 바꿨으면 테두리·빛도 그 모양대로, 규칙은 하나로").
 // hidden(x) = 그 꼭짓점이 카드 밑에 숨으면 둥글리지 않는다. flat = 줄바뀜으로 이어지는 끝(모서리를 둥글리지 않음).
-type Stem = { xa: number; xb: number };
+// seam = 기둥 없이 날짜 경계선에서 맞닿는 이음(stepBandPath가 정한다) — 위·아래 계단을 모두 부드럽게(STEP_SOFT) 둥글린다.
+type Stem = { xa: number; xb: number; seam?: boolean };
 function chainOutline(
   bodies: Box[], stems: Stem[], convex: number, concave: number,
   hidden: (x: number) => boolean, flat: FlatEnds = {}
@@ -127,24 +143,47 @@ function chainOutlineParts(
   return openOutlineParts(outlinePoints(bodies, stems, convex, concave, hidden, flat));
 }
 type SidedPt = Pt & { side?: "L" | "R" };
+// 맞닿는 이음의 계단선 x — aSide = 그 계단선이 앞 몸(A)의 옆변인가. xa·xb는 경계선에서 e만큼 벌린 값(안으로 들이면 뒤집힌다):
+// 가운데 m에서, 앞 몸의 변이면 +e(앞 몸 바깥 = 오른쪽), 뒤 몸의 변이면 −e(뒤 몸 바깥 = 왼쪽).
+function seamX(st: Stem, aSide: boolean): number {
+  const m = (st.xa + st.xb) / 2;
+  const e = (st.xb - st.xa) / 2;
+  return aSide ? m + e : m - e;
+}
 function outlinePoints(
   bodies: Box[], stems: Stem[], convex: number, concave: number,
   hidden: (x: number) => boolean, flat: FlatEnds = {}
 ): SidedPt[] {
   const first = bodies[0];
   const last = bodies[bodies.length - 1];
-  const raw: { x: number; y: number; sharp?: boolean; side?: "L" | "R"; soft?: boolean }[] = [];
+  const raw: { x: number; y: number; sharp?: boolean; side?: "L" | "R"; soft?: boolean; cut?: [number, number] }[] = [];
+  // 줄바뀜 끝의 아래 꼭짓점 — 짝보다 높으면 각지게 두지 않고 아랫변이 짝 높이까지 완만하게 오른다. [들어오는 변, 나가는 변].
+  const run = (cut: number) => Math.max(8, Math.min(STEP_SOFT, cut));
+  const rightCut: [number, number] | undefined = flat.right && flat.rightRise ? [flat.rightRise, run(flat.rightRise)] : undefined;
+  const leftCut: [number, number] | undefined = flat.left && flat.leftRise ? [run(flat.leftRise), flat.leftRise] : undefined;
+  // 위 꼭짓점 — 윗변이 짝의 윗변 높이까지 내려온다.
+  const rightTopCut: [number, number] | undefined = flat.right && flat.rightDrop ? [run(flat.rightDrop), flat.rightDrop] : undefined;
+  const leftTopCut: [number, number] | undefined = flat.left && flat.leftDrop ? [flat.leftDrop, run(flat.leftDrop)] : undefined;
   // 위쪽 변: 왼 → 오른쪽
-  raw.push({ x: first.left, y: first.top, sharp: flat.left, side: flat.left ? "L" : undefined });
+  raw.push({ x: first.left, y: first.top, sharp: flat.left && !leftTopCut, side: flat.left ? "L" : undefined, cut: leftTopCut });
   stems.forEach((st, k) => {
     const A = bodies[k];
     const B = bodies[k + 1];
     const top = Math.min(A.top, B.top);
-    raw.push({ x: st.xa, y: A.top }, { x: st.xa, y: top }, { x: st.xb, y: top }, { x: st.xb, y: B.top });
+    // 경계선에서 맞닿는 이음이면 윗변 계단도 부드럽게 — 띠 때문에 한 칸만 내려앉은 자리에서 ~로 내려갔다 올라온다.
+    const soft = Boolean(st.seam);
+    if (st.seam) {
+      // 맞닿는 이음의 계단선은 하나다 — 그 선은 더 튀어나온 몸의 옆변이라, 그 몸 바깥쪽(띄우는 양 e만큼)에 선다.
+      // (기둥용 xa·xb를 그대로 쓰면 안으로 들일 때 둘의 순서가 뒤집혀 선이 2px 엇갈리고 곡선이 눌렸다.)
+      const x = seamX(st, A.top < B.top);
+      raw.push({ x, y: A.top, soft }, { x, y: B.top, soft });
+      return;
+    }
+    raw.push({ x: st.xa, y: A.top, soft }, { x: st.xa, y: top, soft }, { x: st.xb, y: top, soft }, { x: st.xb, y: B.top, soft });
   });
   raw.push(
-    { x: last.right, y: last.top, sharp: flat.right, side: flat.right ? "R" : undefined },
-    { x: last.right, y: last.bottom, sharp: flat.right, side: flat.right ? "R" : undefined }
+    { x: last.right, y: last.top, sharp: flat.right && !rightTopCut, side: flat.right ? "R" : undefined, cut: rightTopCut },
+    { x: last.right, y: last.bottom, sharp: flat.right && !rightCut, side: flat.right ? "R" : undefined, cut: rightCut }
   );
   // 아래쪽 변: 오른 → 왼쪽
   for (let k = stems.length - 1; k >= 0; k -= 1) {
@@ -153,16 +192,21 @@ function outlinePoints(
     const B = bodies[k + 1];
     const bottom = Math.max(A.bottom, B.bottom);
     // 윗변이 한 줄이면 아랫변 계단은 부드럽게(STEP_SOFT) — 곧은 변 위의 점은 아래에서 걸러져 계단 두 꼭짓점만 남는다.
-    const soft = Math.abs(A.top - B.top) < LEVEL_EPS;
+    const soft = Boolean(st.seam) || Math.abs(A.top - B.top) < LEVEL_EPS;
+    if (st.seam) {
+      const x = seamX(st, A.bottom > B.bottom);
+      raw.push({ x, y: B.bottom, soft }, { x, y: A.bottom, soft });
+      continue;
+    }
     raw.push(
       { x: st.xb, y: B.bottom, soft }, { x: st.xb, y: bottom, soft },
       { x: st.xa, y: bottom, soft }, { x: st.xa, y: A.bottom, soft }
     );
   }
-  raw.push({ x: first.left, y: first.bottom, sharp: flat.left, side: flat.left ? "L" : undefined });
+  raw.push({ x: first.left, y: first.bottom, sharp: flat.left && !leftCut, side: flat.left ? "L" : undefined, cut: leftCut });
   const same = (a: { x: number; y: number }, b: { x: number; y: number }) =>
     Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
-  const pts: { x: number; y: number; sharp?: boolean; side?: "L" | "R"; soft?: boolean }[] = [];
+  const pts: { x: number; y: number; sharp?: boolean; side?: "L" | "R"; soft?: boolean; cut?: [number, number] }[] = [];
   for (const p of raw) if (!pts.length || !same(pts[pts.length - 1], p)) pts.push(p);
   if (pts.length > 1 && same(pts[0], pts[pts.length - 1])) pts.pop();
   const crossAt = (i: number) => {
@@ -182,6 +226,7 @@ function outlinePoints(
     area += p.x * q.y - q.x * p.y;
   }
   return pts.map((p, i) => {
+    if (p.cut) return { ...p, r: p.cut[0], r2: p.cut[1] };
     if (p.sharp || hidden(p.x)) return { ...p, r: 0 };
     if (p.soft) return { ...p, r: STEP_SOFT };
     return { ...p, r: Math.sign(crossAt(i)) === Math.sign(area) ? convex : concave };
@@ -201,10 +246,10 @@ export function openOutlineParts(pts: SidedPt[]): OutlinePart[] {
     const p2 = pts[(i + 1) % n];
     const l1 = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1;
     const l2 = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
-    const r = Math.min(p1.r, l1 / 2, l2 / 2);
+    const { ra, rb } = cornerCuts(p1, l1, l2);
     return {
-      a: { x: p1.x + ((p0.x - p1.x) / l1) * r, y: p1.y + ((p0.y - p1.y) / l1) * r },
-      b: { x: p1.x + ((p2.x - p1.x) / l2) * r, y: p1.y + ((p2.y - p1.y) / l2) * r }
+      a: { x: p1.x + ((p0.x - p1.x) / l1) * ra, y: p1.y + ((p0.y - p1.y) / l1) * ra },
+      b: { x: p1.x + ((p2.x - p1.x) / l2) * rb, y: p1.y + ((p2.y - p1.y) / l2) * rb }
     };
   };
   const parts: OutlinePart[] = [];
@@ -212,7 +257,10 @@ export function openOutlineParts(pts: SidedPt[]): OutlinePart[] {
     if (!skip(k)) continue;
     let j = (k + 1) % n;
     const s0 = corner(j);
-    let d = `M${f(s0.b.x)},${f(s0.b.y)} `;
+    // 시작 꼭짓점에 곡선이 있으면(줄바뀜 끝의 오르는 아랫변) 그 곡선부터 — 각진 끝이면 a = b = 꼭짓점이라 예전과 같다.
+    let d = pts[j].r2 !== undefined
+      ? `M${f(s0.a.x)},${f(s0.a.y)} Q${f(pts[j].x)},${f(pts[j].y)} ${f(s0.b.x)},${f(s0.b.y)} `
+      : `M${f(s0.b.x)},${f(s0.b.y)} `;
     for (let guard = 0; guard < n && !skip(j); guard += 1) {
       j = (j + 1) % n;
       const c = corner(j);
@@ -225,11 +273,11 @@ export function openOutlineParts(pts: SidedPt[]): OutlinePart[] {
 // 꺾인 띠 한 쌍(앞 몸 x0~, 기둥 xa~xb, 뒤 몸 ~x1) — chainOutline의 몸 둘짜리.
 function stepOutline(
   x0: number, xa: number, xb: number, x1: number, S: Span, T: Span,
-  convex: number, concave: number, hidden: (x: number) => boolean, flat: FlatEnds = {}
+  convex: number, concave: number, hidden: (x: number) => boolean, flat: FlatEnds = {}, seam = false
 ): string {
   return chainOutline(
     [{ left: x0, right: xa, ...S }, { left: xb, right: x1, ...T }],
-    [{ xa, xb }], convex, concave, hidden, flat
+    [{ xa, xb, seam }], convex, concave, hidden, flat
   );
 }
 
@@ -240,7 +288,7 @@ export function stepBandPath(
   convex = STEP_CONVEX,
   sw = 1,
   at?: StepLane
-): { d: string; width: number; originX: number; originY: number; xa: number; xb: number } {
+): { d: string; width: number; originX: number; originY: number; xa: number; xb: number; seam: boolean } {
   const gap = T.left - S.right;
   const mid = (S.right + T.left) / 2;
   let w = Math.min(STEP_MAX, Math.max(STEP_MIN, gap - STEP_CLEAR * 2));
@@ -251,29 +299,39 @@ export function stepBandPath(
     const total = w * at.lanes + STEP_LANE_GAP * (at.lanes - 1);
     xa = mid - total / 2 + at.lane * (w + STEP_LANE_GAP);
   }
+  // 두 카드가 세로로 충분히 겹치면 기둥이 필요 없다 — 틈 한가운데(날짜 경계선)에서 맞닿게 해, 위·아래 계단(~)의 중심이
+  // 경계선 위에 온다. 예전엔 기둥 폭(7~12px)의 양 끝에 계단이 서서 곡선이 경계선에서 한쪽으로 치우쳐 보였다(2026-11-23 소유자).
+  // 세로로 안 겹치는 꺾인 띠(위아래로 떨어진 두 카드)는 이을 몸이 있어야 하니 기둥 그대로(경계선에 대칭).
+  // 같은 틈을 여러 이음이 지나도(자리 나눔) 맞닿는 이음은 서로 다른 높이에서 맞닿을 뿐이라 자리를 나눌 필요가 없다.
+  const overlap = Math.min(S.bottom, T.bottom) - Math.max(S.top, T.top);
+  if (overlap >= STEP_SEAM_MIN) {
+    w = 0;
+    xa = mid;
+  }
   const xb = xa + w;
   const x0 = Math.min(S.right - 3, xa);
   const x1 = Math.max(T.left + 3, xb);
   const h = sw / 2;
   const Sy = { top: S.top + h, bottom: S.bottom - h };
   const Ty = { top: T.top + h, bottom: T.bottom - h };
+  const seam = w === 0;
   const d = stepOutline(x0, xa + h, xb - h, x1, Sy, Ty, Math.max(2, convex - h), STEP_CONCAVE, (x) =>
-    Math.abs(x - x0) < 0.01 || Math.abs(x - x1) < 0.01
+    Math.abs(x - x0) < 0.01 || Math.abs(x - x1) < 0.01, {}, seam
   );
-  return { d, width: w, originX: xa, originY: S.top < T.top ? S.top : S.bottom, xa, xb };
+  return { d, width: w, originX: xa, originY: S.top < T.top ? S.top : S.bottom, xa, xb, seam };
 }
 
 // 고른 묶음을 한 덩어리로 감싸는 테두리 — 앞 카드 + 띠 + 다음 카드 바깥을 e만큼 띄워 한 줄로 두른다.
 // 카드마다 따로 두르던 점선/실선 링(띠 위에서 끊기고 겹치던 것)을 대신한다.
 // stemE = 기둥(칸 사이 틈) 부분만 따로 띄우는 양 — 테두리가 틈 밖으로 나가면 옆 카드·'원래 위치' 상자 점선과 닿는다.
 export function stepRingPath(
-  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e, flat: FlatEnds = {}
+  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e, flat: FlatEnds = {}, seam = false
 ): string {
   return stepOutline(
     S.left - e, xa - stemE, xb + stemE, T.right + e,
     { top: S.top - e, bottom: S.bottom + e },
     { top: T.top - e, bottom: T.bottom + e },
-    convex + e, Math.max(2, STEP_CONCAVE - e), () => false, flat
+    convex + e, Math.max(2, STEP_CONCAVE - e), () => false, flat, seam
   );
 }
 
@@ -409,7 +467,7 @@ function drawSteps(root: HTMLElement) {
         const TB = local(to.getBoundingClientRect());
         const convex = convexOf(from);
         const sw = borderWidthOf(from);
-        const { originX, originY, xa, xb } = stepBandPath(SB, TB, convex, sw, laneOf(from));
+        const { originX, originY, xa, xb, seam } = stepBandPath(SB, TB, convex, sw, laneOf(from));
         // (2026-11-16 소유자 "중간에 단차") 몸통 = 앞 카드(띠로 붙은 조각 포함) + 기둥 + 다음 카드 전체를 한 도형으로.
         // 두 카드는 배경·테두리를 비우고(.chain-step-solid) 이 도형이 칠·테두리를 한 번에 맡는다 — 카드와 띠가 따로
         // 칠해지며 생기던 색 경계·테두리 어긋남이 구조적으로 없다. 테두리 두께 = 카드 테두리 두께, 절반 안쪽에 선다.
@@ -418,11 +476,8 @@ function drawSteps(root: HTMLElement) {
         const SU = unionBox(SG, local);
         const TU = unionBox(TG, local);
         // 묶음 바깥 끝이 줄바뀜이면 그 끝은 둥글리지 않고 평평하게 — 카드 칠을 이 도형이 맡으므로 여기서 맞춘다.
-        const flat: FlatEnds = {
-          left: SG.some((el) => rowBreakLeft(el)),
-          right: TG.some((el) => rowBreakRight(el))
-        };
-        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex, -sw / 2, flat);
+        const flat: FlatEnds = flatEndsOf(SG, TG);
+        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex, -sw / 2, flat, seam);
         const overlays = flatOverlaysOf(
           root.querySelector<HTMLElement>(".studio-event-pill:not(.chain-step-solid)") ?? from
         );
@@ -466,7 +521,7 @@ function drawSteps(root: HTMLElement) {
         body.style.strokeWidth = `${sw}px`;
         // 카드가 흐려지는 상태(끌기 원래 자리·필터 흐림)는 몸통도 같이 흐린다.
         g.style.opacity = getComputedStyle(from).opacity;
-        if (laneOf(from)) {
+        if (laneOf(from) && !seam) {
           const h = sw / 2;
           const top = Math.min(SB.top, TB.top) + h;
           const bottom = Math.max(SB.bottom, TB.bottom) - h;
@@ -600,6 +655,83 @@ function rowBreakPartners(root: HTMLElement, m: HTMLElement): HTMLElement[] {
     (n) => n !== m && !n.classList.contains("band-slot") && want.includes(Math.floor(cellIndexOf(n) / 7))
   );
 }
+// ── 줄바뀜 끝의 곡률(2026-11-23 소유자: 토→일로 끊긴 일정도 실제로 이어진 것처럼) ──
+// 토요일 조각과 일요일 조각은 칸 안에서 선 자리(위에서 몇 번째)와 글 높이가 다를 수 있다. 두 조각이 한 줄에 붙어 있었다면
+// 그 자리에 계단(~)이 생겼을 것이다 — 줄이 바뀌는 끝에서 그 계단을 그린다: 윗변은 더 위에 선 조각이, 아랫변은 더 아래까지
+// 내려온 조각이 열린 끝에서 상대 조각의 자리까지 굽는다. 그래서 줄이 바뀌는 자리에서 두 조각의 위·아래가 같은 높이로 만난다.
+// 끄는 동안(놓을 자리가 열려 한 조각이 밀려 내려갈 때)에도 매 프레임 다시 재서 따라간다.
+// 카드가 제 칠을 가질 때는 그 모서리 반경(인라인)으로, 한 도형이 칠할 때·고른 테두리·손 올림 빛은 outlinePoints가 같은 값으로 그린다.
+const WRAP_RISE_MIN = 2; // 이보다 작은 차는 곡선 없이 둔다
+// 곡선의 가로 길이 — 같은 줄 계단(STEP_SOFT)과 같은 크기감으로 짧게: 굽는 높이만큼, 많아야 STEP_SOFT.
+// (처음엔 높이의 2.4배·64px까지 길게 눕혔다가 "곡선이 너무 일찍 시작한다, 금→토 계단에 비해 과하다"로 줄였다 — 2026-11-23 소유자.)
+const WRAP_RUN_MIN = 8;
+// rise = 아랫변이 위로 굽는 높이, drop = 윗변이 아래로 굽는 높이(둘 다 0 이상).
+type WrapCut = { side: "left" | "right"; rise: number; drop: number };
+const wrapRun = (cut: number) => Math.max(WRAP_RUN_MIN, Math.min(STEP_SOFT, cut));
+function shapeWrapEnds(root: HTMLElement) {
+  const want = new Map<HTMLElement, WrapCut>();
+  // 칸 윗변에서 잰 카드의 위·아래(레이아웃 px) — 줄이 달라도 칸 머리 높이는 같아 그대로 견줄 수 있다.
+  const place = (el: HTMLElement) => {
+    const cell = el.closest<HTMLElement>("article") ?? el.parentElement;
+    const top = cell ? (el.getBoundingClientRect().top - cell.getBoundingClientRect().top) / scaleOf(el) : 0;
+    return { top, bottom: top + el.offsetHeight, height: el.offsetHeight };
+  };
+  for (const out of Array.from(root.querySelectorAll<HTMLElement>(".wrap-out[data-wrap-to]"))) {
+    const inn = root.querySelector<HTMLElement>(`.wrap-in[data-wrap-from="${CSS.escape(out.dataset.wrapTo ?? "")}"]`);
+    if (!inn) continue;
+    const o = place(out);
+    const i = place(inn);
+    const cuts = { out: { rise: 0, drop: 0 }, inn: { rise: 0, drop: 0 } };
+    // 윗변: 더 위에 선 조각이 상대의 윗변 높이까지 내려온다.
+    if (i.top - o.top >= WRAP_RISE_MIN) cuts.out.drop = i.top - o.top;
+    else if (o.top - i.top >= WRAP_RISE_MIN) cuts.inn.drop = o.top - i.top;
+    // 아랫변: 더 아래까지 내려온 조각이 상대의 아랫변 높이까지 올라온다.
+    if (o.bottom - i.bottom >= WRAP_RISE_MIN) cuts.out.rise = o.bottom - i.bottom;
+    else if (i.bottom - o.bottom >= WRAP_RISE_MIN) cuts.inn.rise = i.bottom - o.bottom;
+    for (const [el, cut, h, side] of [[out, cuts.out, o.height, "right"], [inn, cuts.inn, i.height, "left"]] as const) {
+      if (!cut.rise && !cut.drop) continue;
+      // 두 굽음이 합쳐 조각 높이를 넘지 않게(세로로 전혀 겹치지 않는 자리) — 비율대로 줄인다.
+      const over = (cut.rise + cut.drop) / (h * 0.9);
+      const k = over > 1 ? 1 / over : 1;
+      want.set(el, { side, rise: cut.rise * k, drop: cut.drop * k });
+    }
+  }
+  const clear = (el: HTMLElement) => {
+    el.style.borderBottomRightRadius = "";
+    el.style.borderBottomLeftRadius = "";
+    el.style.borderTopRightRadius = "";
+    el.style.borderTopLeftRadius = "";
+    el.removeAttribute("data-wrap-rise");
+  };
+  for (const el of Array.from(root.querySelectorAll<HTMLElement>("[data-wrap-rise]"))) if (!want.has(el)) clear(el);
+  for (const [el, w] of want) {
+    const mark = `${w.side}:${w.rise.toFixed(1)}:${w.drop.toFixed(1)}`;
+    if (el.getAttribute("data-wrap-rise") === mark) continue;
+    clear(el);
+    const radius = (cut: number) => `${wrapRun(cut).toFixed(1)}px ${cut.toFixed(1)}px`;
+    if (w.rise) el.style[w.side === "right" ? "borderBottomRightRadius" : "borderBottomLeftRadius"] = radius(w.rise);
+    if (w.drop) el.style[w.side === "right" ? "borderTopRightRadius" : "borderTopLeftRadius"] = radius(w.drop);
+    el.setAttribute("data-wrap-rise", mark);
+  }
+}
+function wrapCutOf(els: HTMLElement[], side: "left" | "right"): { rise: number; drop: number } | null {
+  for (const el of els) {
+    const [s, rise, drop] = (el.getAttribute("data-wrap-rise") ?? "").split(":");
+    if (s === side) return { rise: Number(rise) || 0, drop: Number(drop) || 0 };
+  }
+  return null;
+}
+// 블록의 두 끝이 줄바뀜인지 + 그 끝에서 위·아래 변이 굽는 양.
+function flatEndsOf(first: HTMLElement[], last: HTMLElement[]): FlatEnds {
+  const l = wrapCutOf(first, "left");
+  const r = wrapCutOf(last, "right");
+  return {
+    left: first.some((el) => rowBreakLeft(el)),
+    right: last.some((el) => rowBreakRight(el)),
+    ...(l ? { leftRise: l.rise, leftDrop: l.drop } : {}),
+    ...(r ? { rightRise: r.rise, rightDrop: r.drop } : {})
+  };
+}
 function unionBox(els: HTMLElement[], local: (r: DOMRect) => Box): Box {
   const bs = els.map((e) => local(e.getBoundingClientRect()));
   return {
@@ -678,15 +810,12 @@ function blockOutline<R>(
     .map(({ from, to }) => stepBandPath(local(from.getBoundingClientRect()), local(to.getBoundingClientRect()), convex, sw, laneOf(from)))
     .sort((a, b) => a.xa - b.xa);
   const grow = (b: Box): Box => ({ left: b.left - e, right: b.right + e, top: b.top - e, bottom: b.bottom + e });
-  const flat: FlatEnds = {
-    left: block.bodies[0].some((el) => rowBreakLeft(el)),
-    right: block.bodies[block.bodies.length - 1].some((el) => rowBreakRight(el))
-  };
+  const flat: FlatEnds = flatEndsOf(block.bodies[0], block.bodies[block.bodies.length - 1]);
   // 기둥 수가 몸 사이 수와 안 맞으면(그리는 도중의 어중간한 장면) 전체를 감싼 한 상자로.
   const ok = stems.length === boxes.length - 1;
   return draw(
     ok ? boxes.map(grow) : [grow(unionBox(block.cards, local))],
-    ok ? stems.map((st) => ({ xa: st.xa - stemE, xb: st.xb + stemE })) : [],
+    ok ? stems.map((st) => ({ xa: st.xa - stemE, xb: st.xb + stemE, seam: st.seam })) : [],
     Math.max(2, convex + e), Math.max(2, STEP_CONCAVE - e), () => false, flat
   );
 }
@@ -1275,6 +1404,18 @@ function isDecorativeMutation(r: MutationRecord): boolean {
   return nodes.length > 0 && nodes.every(sheen);
 }
 
+/** 이어진 카드·띠 머리·띠 빈 자리의 크기에 닿을 수 있는 변화인가 — 그 요소 자신이거나, 그 안쪽이거나, 그런 요소가 붙고 떨어졌거나. */
+const SIZED_NODES = "[data-chain], [data-band-head], [data-band-slot], [data-step-from], [data-step-to]";
+function touchesSizedCards(r: MutationRecord): boolean {
+  const el = r.target instanceof Element ? r.target : r.target.parentElement;
+  if (!el) return true;
+  if (r.type === "attributes" && r.attributeName !== "class") return true; // data-chain·data-step-* 자체가 바뀜
+  if (el.closest(SIZED_NODES)) return true;
+  if (r.type !== "childList") return false;
+  const has = (n: Node) => n instanceof Element && (n.matches(SIZED_NODES) || n.querySelector(SIZED_NODES) !== null);
+  return [...r.addedNodes, ...r.removedNodes].some(has);
+}
+
 function applyHot(root: HTMLElement, key: string | null) {
   const prev = hotKey.get(root) ?? null;
   if (prev === key) return;
@@ -1445,9 +1586,9 @@ export function useEqualChainHeights<T extends HTMLElement>(
         el.removeAttribute("data-band-sparse");
       }
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
-      const signature = pills
-        .map((p) => `${p.dataset.chain}:${p.offsetWidth}:${p.childElementCount}:${p.textContent?.length ?? 0}:${p.className}`)
-        .join("|");
+      // 폭만 본다 — 글·모양이 바뀌면 MutationObserver가 force로 부른다. (글자 수까지 넣었더니 카드마다 글 전체를 읽느라
+      // 끄는 동안 이 한 줄이 높이 맞춤 전체만큼 걸렸다, 2026-11-23 실측.)
+      const signature = pills.map((p) => `${p.dataset.chain}:${p.offsetWidth}`).join("|");
       if (!force && signature === fitSignature && root!.querySelector("[data-eq-h]:not([data-chain])") === null) {
         draw();
         return;
@@ -1496,6 +1637,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
         return;
       }
       mo?.disconnect();
+      shapeWrapEnds(root!);
       drawSteps(root!);
       drawRings(root!);
       drawCopyMarks(root!);
@@ -1510,6 +1652,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
     // 커지고, 나머지는 끝나서야 따라 점프 → '15일만 튀고 6~14가 뒤늦게 따라오는' 글리치.
     // → 트리거가 오면 '다음 프레임부터 매 프레임' equalize를 돌리고, 마지막 트리거 후 잠깐(꼬리)
     //   더 돌린다. 그러면 이어진 칸들이 폭 변화 내내 같이 높이를 맞춰 한 번에 부드럽게 움직인다.
+    let rootWidth = -1;
     let pumpRaf = 0;
     let pumpUntil = 0;
     // 이 시각까지는 폭·높이도 다시 맞춘다(크기가 바뀌는 중). 그 뒤 펌프가 남아 있으면 그리기만.
@@ -1591,7 +1734,18 @@ export function useEqualChainHeights<T extends HTMLElement>(
     }
     const ro =
       typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => {
+        ? new ResizeObserver((entries) => {
+            // 폭이 그대로면 카드의 폭·높이는 안 바뀐다 — 높이만 바뀐 알림(끄는 동안 놓을 자리가 열리고 닫히며 달력 높이가
+            // 프레임마다 변한다)에는 폭·높이를 다시 맞추지 않고 띠·테두리만 따라 그린다. 예전엔 그 프레임마다 전부 다시 맞췄다
+            // (한 장 끌기 시간의 가장 큰 몫, 2026-11-23 실측).
+            const w = Math.round((entries[entries.length - 1]?.contentRect.width ?? 0) * 2) / 2;
+            if (w === rootWidth) {
+              draw();
+              pumpUntil = Math.max(pumpUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 60);
+              if (!pumping) pump();
+              return;
+            }
+            rootWidth = w;
             equalize();
             schedule();
           })
@@ -1605,7 +1759,9 @@ export function useEqualChainHeights<T extends HTMLElement>(
             // 손 올림 표시(data-chain-hot·.is-hot)와 광택 레이어의 생성·삭제는 CSS·장식일 뿐 크기를 안 바꾼다 —
             // 이것까지 다시 재면 카드에 마우스를 올릴 때마다 전체 맞춤이 250ms씩 매 프레임 돌았다(2026-11-17).
             if (records.every(isDecorativeMutation)) return;
-            equalize();
+            // 이어진 카드·띠 머리에 닿는 변화만 강제로 다시 맞춘다. 그 밖(칸 강조 클래스, 놓을 자리, 이어지지 않은 카드)은
+            // 폭이 그대로면 띠·테두리만 다시 그린다(equalize(false)) — 끄는 동안 칸 강조가 바뀔 때마다 전부 다시 맞추지 않게.
+            equalize(records.some(touchesSizedCards));
             scheduleSettle();
           })
         : null;

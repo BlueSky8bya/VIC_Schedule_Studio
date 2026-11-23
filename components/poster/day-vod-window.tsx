@@ -11,6 +11,7 @@ import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { VodChapters, type VodChaptersApi, formatTimecode } from "@/components/poster/vod-chapters";
+import { vodDayStartLabel, vodDayStartMs } from "@/lib/schedules/vod-days";
 import "./public-poster.css";
 import "./poster-metal-water.css";
 
@@ -39,6 +40,17 @@ export function VodAccessBadge({ access, small = false }: { access: "sub" | "plu
   );
 }
 
+/** 방송 시작 시각을 한국 시각 말로 — "11월 22일 오전 1시 50분". 시각을 모르면 null. */
+export function vodStartLabel(startedAt: string | undefined): string | null {
+  const t = startedAt ? Date.parse(startedAt) : Number.NaN;
+  if (!Number.isFinite(t)) return null;
+  const k = new Date(t + 9 * 3_600_000); // 한국 시각을 UTC 필드로 읽는다
+  const h = k.getUTCHours();
+  const m = k.getUTCMinutes();
+  const hour = `${h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시`;
+  return `${k.getUTCMonth() + 1}월 ${k.getUTCDate()}일 ${hour}${m ? ` ${m}분` : ""}`;
+}
+
 export type DayVod = {
   titleNo: number;
   title: string;
@@ -54,7 +66,7 @@ export type DayVod = {
   // 이 날짜 칸에서 열 때 시작할 지점(초) — 며칠 이어진 방송의 둘째 날부터(lib/schedules/vod-days, 2026-11-23).
   // 없으면 처음부터. 플레이어 초기화·Space 재생·숲 링크가 모두 이 지점에서 출발한다.
   daySec?: number;
-  // 한 방송이 여러 편이고 며칠에 걸쳤을 때 — 이 날 먼저 열 편(그날 오전 6시에 방송 중이던 편). lib/schedules/vod-days.
+  // 한 방송이 여러 편이고 며칠에 걸쳤을 때 — 이 날 먼저 열 편(그날 새로 켠 방송, 없으면 그날 가장 오래 나온 편). lib/schedules/vod-days.
   dayFocus?: true;
   // 이 날과 겹치지는 않지만 같은 방송의 다른 편이라 함께 보이는 편.
   dayExtra?: true;
@@ -1586,10 +1598,28 @@ export function DayVodWindow({
                                   ▶ 바로 아래에 날짜·시각 말로 따로 알린다. 영상 안 지점은 덧붙임. */}
                               {vod.daySec ? (
                                 <span className="dvm-daystart">
-                                  <strong>{Number(dateKey.slice(5, 7))}월 {Number(dateKey.slice(8, 10))}일 오전 6시 방송분부터 재생</strong>
+                                  <strong>{Number(dateKey.slice(5, 7))}월 {Number(dateKey.slice(8, 10))}일 일출({vodDayStartLabel(dateKey)}) 방송분부터 재생</strong>
                                   <small>영상 {formatTimecode(vod.daySec)} 지점</small>
                                 </span>
-                              ) : null}
+                              ) : (() => {
+                                // 처음부터 재생되는 편 — 편이 여럿인 날에는 이 편이 언제 방송분인지 말해 준다(2026-11-23 소유자:
+                                // 21일 창에서 2부를 고르면 ▶만 보여 언제 것인지 헷갈린다). 편이 하나뿐인 평소 날은 조용히 둔다.
+                                const when = list.length > 1 ? vodStartLabel(vod.startedAt) : null;
+                                if (!when) return null;
+                                const day = `${Number(dateKey.slice(5, 7))}월 ${Number(dateKey.slice(8, 10))}일`;
+                                // 이 날과 겹치지 않는 편(같은 방송의 다른 편)은 앞뒤 관계까지 — "이 날 것이 아니다"를 분명히.
+                                const note = !vod.dayExtra
+                                  ? "처음부터 재생"
+                                  : Date.parse(vod.startedAt ?? "") >= vodDayStartMs(dateKey)
+                                    ? `${day} 뒤에 이어진 편`
+                                    : `${day} 전에 끝난 편`;
+                                return (
+                                  <span className="dvm-daystart is-plain">
+                                    <strong>{when} 시작한 방송분</strong>
+                                    <small>{note}</small>
+                                  </span>
+                                );
+                              })()}
                               {vod.durationMs > 0 ? (
                                 <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
                               ) : null}
