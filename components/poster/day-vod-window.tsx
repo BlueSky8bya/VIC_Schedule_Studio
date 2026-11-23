@@ -1574,12 +1574,17 @@ export function DayVodWindow({
                                   <Play size={16} strokeWidth={2.6} />
                                 </span>
                               )}
+                              {/* 며칠 이어진 방송의 둘째 날부터 — 이 날 칸에서는 그날(오전 6시)이 시작하는 지점부터 튼다.
+                                  길이 배지와 한 줄에 쓰면 "4시간부터 27시간이 지났다"로 읽혔다(2026-11-23 소유자) — 길이와 떼어
+                                  ▶ 바로 아래에 날짜·시각 말로 따로 알린다. 영상 안 지점은 덧붙임. */}
+                              {vod.daySec ? (
+                                <span className="dvm-daystart">
+                                  <strong>{Number(dateKey.slice(5, 7))}월 {Number(dateKey.slice(8, 10))}일 오전 6시 방송분부터 재생</strong>
+                                  <small>영상 {formatTimecode(vod.daySec)} 지점</small>
+                                </span>
+                              ) : null}
                               {vod.durationMs > 0 ? (
-                                <em className="dvm-dur">
-                                  {/* 며칠 이어진 방송의 둘째 날부터 — 이 날 칸에서는 그날이 시작하는 지점부터 튼다는 것을 미리 말한다. */}
-                                  {vod.daySec ? `${formatTimecode(vod.daySec)}부터 · ` : ""}
-                                  {formatVodDuration(vod.durationMs)}
-                                </em>
+                                <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
                               ) : null}
                             </span>
                             {/* 구독 전용 안내 — 숲 페이지에선 로그인한 구독자가 바로 본다(임베드는 로그인 상태를 못 쓴다). */}

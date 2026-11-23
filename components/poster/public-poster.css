@@ -1867,6 +1867,37 @@ html[data-reduce-motion] .dvm-notice {
 }
 .dvm-thumb:hover .dvm-play { background: rgb(var(--studio-action-rgb) / 80%); }
 /* 구독·구독+ 썸네일엔 ▶가 없다(안내 카드) — 별도 호버 색 불필요. */
+/* 며칠 이어진 방송의 둘째 날부터 — "이 날 오전 6시 방송분부터 재생" 알림. ▶ 바로 아래 가운데, 길이 배지(오른쪽 아래)와 떨어뜨려
+   둘을 한 문장으로 읽지 않게 한다. 강조색 알약이라 덮개에서 가장 먼저 읽힌다. */
+.dvm-daystart {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 34px);
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  max-width: calc(100% - 24px);
+  padding: 6px 14px 7px;
+  border-radius: var(--r-pill, 999px);
+  background: rgb(var(--studio-action-rgb) / 92%);
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 28%);
+  pointer-events: none;
+}
+.dvm-daystart strong {
+  font-size: var(--text-body, 14px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.dvm-daystart small {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  opacity: 0.88;
+  font-variant-numeric: tabular-nums;
+}
 .dvm-dur {
   position: absolute;
   right: 8px;
