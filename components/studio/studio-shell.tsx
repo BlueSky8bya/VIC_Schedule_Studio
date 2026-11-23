@@ -126,6 +126,7 @@ import {
   getEventDateKey,
   hasSupportDateRange,
   getEventsForDate,
+  isEndedUpSupport,
   eventMatchesTagFilter,
   getEventSpan,
   getLinkedChainIds,
@@ -1395,12 +1396,7 @@ export function StudioShell({
   // 단순 기간 안내(supportKind 'period')는 예외 — 정보성 기록이라 지나도 남긴다(2026-09-01).
   const liveEvents = useMemo(
     () =>
-      visibleEvents.filter(
-        (e) =>
-          !e.isSupport ||
-          e.supportKind === "period" ||
-          (e.endDateKey ?? getEventDateKey(e)) >= today
-      ),
+      visibleEvents.filter((e) => !isEndedUpSupport(e, today)),
     [visibleEvents, today]
   );
   // 최초공개 게이트 판정 — 편집 패널이 가리키는 일정이 '아직 안 풀린 떡밥'이고 이 세션에서
@@ -6171,10 +6167,42 @@ export function StudioShell({
     setClipboard(null);
     setCopiedId(null);
   }
-  function flashToast(message: string) {
+  // 알림은 하나만 — 새 알림이 뜨면 앞 알림의 끄기 타이머를 버린다(앞 타이머가 뒤 알림을 일찍 지우지 않게).
+  const toastTimerRef = useRef<number | null>(null);
+  function flashToast(message: string, ms = 1600) {
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
     setCopyToast(message);
-    window.setTimeout(() => setCopyToast(null), 1600);
+    toastTimerRef.current = window.setTimeout(() => {
+      toastTimerRef.current = null;
+      setCopyToast(null);
+    }, ms);
   }
+  // ── 끝난 업 도움은 달력에서 내려간다는 안내(2026-11-23) ──
+  // 업 도움 띠는 종료일이 지나면 편집실·시청자 어디에도 그리지 않는다(isEndedUpSupport). 그래서 띠를 지난 날짜로
+  // 옮기거나(끌기·되돌리기·다시 실행), 지난 날짜로 저장·붙여넣으면 "옮겼어요"만 뜨고 띠는 사라졌다 — 고장처럼 보였다.
+  // 경로마다 문구를 고치지 않고 여기 한 곳에서 본다: 방금까지 보이던(또는 방금 생긴) 업 도움이 '끝난 띠'가 되면 알린다.
+  // 처음 불러올 때와 서버에서 통째로 다시 받을 때 이미 끝나 있던 띠는 알리지 않는다(이 화면에서 손댄 것만).
+  const supportSeenRef = useRef<Map<string, boolean> | null>(null);
+  useEffect(() => {
+    const prev = supportSeenRef.current;
+    const next = new Map<string, boolean>();
+    let dropped: StudioScheduleEvent | null = null;
+    for (const e of visibleEvents) {
+      if (!e.isSupport || e.supportKind === "period") continue;
+      const id = canonId(e.id);
+      const ended = isEndedUpSupport(e, today);
+      next.set(id, ended);
+      if (!prev || !ended) continue;
+      // 보이다가 끝난 띠가 됐거나, 이 화면에서 방금 새로 만든(아직 temp- id인) 띠가 처음부터 끝난 날짜인 경우.
+      const was = prev.get(id);
+      if (was === false || (was === undefined && id.startsWith("temp-"))) dropped = e;
+    }
+    supportSeenRef.current = next;
+    if (dropped) {
+      const end = dropped.endDateKey ?? getEventDateKey(dropped);
+      flashToast(`${formatShortDate(end)}에 끝난 업 도움이라 달력에서 내렸어요 · Ctrl+Z로 되돌리기`, 5200);
+    }
+  }, [visibleEvents, today, canonId]);
   function copySelectedEvent() {
     if (!selectedEventId) return;
     const ev = events.find((e) => e.id === selectedEventId);

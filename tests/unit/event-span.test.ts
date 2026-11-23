@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildChainJoins, getEventDateKey, getEventSpan } from "@/lib/calendar/month";
+import { buildChainJoins, getEventDateKey, getEventSpan, isEndedUpSupport } from "@/lib/calendar/month";
 import type { StudioScheduleEvent } from "@/lib/domain/schedule-types";
 
 // getEventSpan용 최소 일정 객체. 체인 판정에 쓰는 필드(날짜·linkNext·대표 태그)만 의미 있다.
@@ -110,5 +110,25 @@ describe("getEventSpan 이어짐(체인) 판정", () => {
     expect(midSpan.roundRight).toBe(false);
     expect(endSpan.roundRight).toBe(true); // 끝 칸 오른쪽은 둥글게
     expect(startSpan.isMulti).toBe(true);
+  });
+});
+
+// 끝난 업 도움 — 달력에서 내리는 판정 한 곳(편집실·시청자 공통). 편집실은 이 판정으로 "달력에서 내렸어요" 안내도 띄운다.
+describe("isEndedUpSupport", () => {
+  const today = "2026-11-23";
+  const up = (startsAt: string, endDateKey?: string) =>
+    ev({ id: "up", startsAt: `${startsAt}T00:00:00+09:00`, endDateKey, isSupport: true, supportKind: "up" });
+  it("종료일이 오늘보다 앞이면 끝난 띠", () => {
+    expect(isEndedUpSupport(up("2026-11-19", "2026-11-20"), today)).toBe(true);
+    expect(isEndedUpSupport(up("2026-11-22"), today)).toBe(true);
+  });
+  it("오늘 끝나거나 아직 안 끝났으면 그린다", () => {
+    expect(isEndedUpSupport(up("2026-11-22", "2026-11-23"), today)).toBe(false);
+    expect(isEndedUpSupport(up("2026-11-23"), today)).toBe(false);
+    expect(isEndedUpSupport(up("2026-11-25", "2026-11-26"), today)).toBe(false);
+  });
+  it("기간 안내와 보통 일정은 지나도 남는다", () => {
+    expect(isEndedUpSupport({ ...up("2026-11-19", "2026-11-20"), supportKind: "period" }, today)).toBe(false);
+    expect(isEndedUpSupport(ev({ id: "plain", startsAt: "2026-11-19T00:00:00+09:00" }), today)).toBe(false);
   });
 });
