@@ -867,7 +867,8 @@ export const ACT: Record<string, TargetLabel> = {
   "legal-tori-home": { name: "문서 사이드: 일정표 보기", area: "기타" },
   "legal-home": { name: "약관·방침 → 일정표로 돌아가기", area: "기타" },
   "legal-privacy": { name: "이용약관 → 개인정보처리방침", area: "기타" },
-  "legal-policy-info": { name: "방침 정보·주요 변경 비교", area: "기타" },
+  // Retired public control; retain its label for existing activity history.
+  "legal-policy-info": { name: "방침 정보·주요 변경 비교", area: "기타", hint: "옛 기록(2026-11-26 공개 변경 이력 철수)", retired: true },
   "legal-terms": { name: "개인정보처리방침 → 이용약관", area: "기타" },
   "art-filter": { name: "아트 보드 필터 칩", area: "편집실", hint: "/studio/ambient-art(개발자) — 상태·계절·차수·지금 화면" },
   "vod-chapters-retry": { name: "챕터 다시 불러오기", area: "다시보기 창" },

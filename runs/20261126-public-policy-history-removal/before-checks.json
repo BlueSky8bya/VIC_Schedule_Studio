@@ -1,0 +1,26 @@
+[
+  {
+    "width": 1440,
+    "privacy": {
+      "overflow": false,
+      "sections": 13,
+      "historyPresent": true
+    },
+    "termsOverflow": false,
+    "errors": [],
+    "requests": 91,
+    "scope": "Anonymous deployed static legal pages, non-GET blocked"
+  },
+  {
+    "width": 390,
+    "privacy": {
+      "overflow": false,
+      "sections": 13,
+      "historyPresent": true
+    },
+    "termsOverflow": false,
+    "errors": [],
+    "requests": 91,
+    "scope": "Anonymous deployed static legal pages, non-GET blocked"
+  }
+]

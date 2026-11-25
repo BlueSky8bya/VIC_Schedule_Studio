@@ -1,0 +1,26 @@
+[
+  {
+    "width": 1440,
+    "privacy": {
+      "overflow": false,
+      "sections": 12,
+      "historyPresent": false
+    },
+    "termsOverflow": false,
+    "errors": [],
+    "requests": 61,
+    "scope": "Actual built Next static HTML/JS/CSS in offline browser; no server/auth/DB"
+  },
+  {
+    "width": 390,
+    "privacy": {
+      "overflow": false,
+      "sections": 12,
+      "historyPresent": false
+    },
+    "termsOverflow": false,
+    "errors": [],
+    "requests": 61,
+    "scope": "Actual built Next static HTML/JS/CSS in offline browser; no server/auth/DB"
+  }
+]

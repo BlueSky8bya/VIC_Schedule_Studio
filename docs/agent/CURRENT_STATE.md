@@ -25,6 +25,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
+| PRIVACY-HISTORY-20261126 | Owner requested full removal of public history section | Verify static pages and developer-only gate; release | [Plan](plans/PLAN-20261126-public-policy-history-removal.md) |
 | COMPANION-PANEL-REPORT-20261026 | Watch original cause | Inspect bounded local recurrence evidence on a distinct real failure; preserve original unconfirmed report | [Contract](verification/COMPANION_VISIBILITY-20261026.md) |
 | COMPANION-SETTINGS-REDESIGN | Stages 0-5 released 11-19; visual suite repaired 11-20 | None. Notes in contract | [Contract](plans/PLAN-20261118-companion-settings-redesign.md) |
 | DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |

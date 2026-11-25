@@ -16,7 +16,7 @@ Use the separate browser key vic.companionIndividual.v1 for settled automatic te
 
 The 138/139 per-document automatic reroll clauses are superseded only for temperament persistence. An explicit random selection settles a new automatic child. No server inference, federation, account linking, new consent dialog or new analytics metadata.
 
-Keep required policy timing/comparison publicly accessible in a collapsed information section. Move detailed operational history to the existing developer settings surface with an authenticated actual-developer server action; role preview does not grant access. Public legal pages remain static and do not resolve actors.
+Superseded public-history clause (owner2026-11-26 follow-up): the initial collapsed public timing/comparison section is removed entirely, including its table-of-contents item and terms link. Operational history remains in the existing developer settings surface with an authenticated actual-developer server action; role preview does not grant access. Public legal pages remain static and do not resolve actors. Current processing, retention and rights descriptions remain in the policy body. [Removal record](../plans/PLAN-20261126-public-policy-history-removal.md).
 
 ## Consequences and recovery
 

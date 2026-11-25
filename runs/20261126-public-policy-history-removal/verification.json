@@ -1,0 +1,74 @@
+{
+  "before": [
+    {
+      "width": 1440,
+      "privacy": {
+        "overflow": false,
+        "sections": 13,
+        "historyPresent": true
+      },
+      "termsOverflow": false,
+      "errors": [],
+      "requests": 91,
+      "scope": "Anonymous deployed static legal pages, non-GET blocked"
+    },
+    {
+      "width": 390,
+      "privacy": {
+        "overflow": false,
+        "sections": 13,
+        "historyPresent": true
+      },
+      "termsOverflow": false,
+      "errors": [],
+      "requests": 91,
+      "scope": "Anonymous deployed static legal pages, non-GET blocked"
+    }
+  ],
+  "after": [
+    {
+      "width": 1440,
+      "privacy": {
+        "overflow": false,
+        "sections": 12,
+        "historyPresent": false
+      },
+      "termsOverflow": false,
+      "errors": [],
+      "requests": 61,
+      "scope": "Actual built Next static HTML/JS/CSS in offline browser; no server/auth/DB"
+    },
+    {
+      "width": 390,
+      "privacy": {
+        "overflow": false,
+        "sections": 12,
+        "historyPresent": false
+      },
+      "termsOverflow": false,
+      "errors": [],
+      "requests": 61,
+      "scope": "Actual built Next static HTML/JS/CSS in offline browser; no server/auth/DB"
+    }
+  ],
+  "base": "f9104830e77f7275bcfdb24fa247873e8a7e4caa",
+  "dateKst": "2026-11-26",
+  "build": {
+    "exit": 0,
+    "sourceStable": true,
+    "hashedProductFiles": 679
+  },
+  "lintExit": 0,
+  "unit": {
+    "files": 490,
+    "passed": 7495,
+    "skipped": 1
+  },
+  "harnessDocuments": 463,
+  "independentReview": "No issues: public routes, actual-developer gate, navigation, retired activity target",
+  "limits": [
+    "Built static legal-page browser checks do not certify actual Google owner login/RLS.",
+    "Production release is pending at candidate-report creation."
+  ],
+  "typecheckExit": 0
+}

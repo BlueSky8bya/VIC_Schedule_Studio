@@ -1487,8 +1487,3 @@
   height: 112px;
   margin-bottom: 4px;
 }
-
-/* Keep required policy information public without a permanent dated operations table. */
-.policyInfo { margin-block: var(--space-3, 12px); border-top: 1px solid var(--line); padding-top: var(--space-3, 12px); }
-.policyInfo > summary { cursor: pointer; font-weight: 600; color: var(--text); }
-.policyInfo > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--r-sm, 6px); }

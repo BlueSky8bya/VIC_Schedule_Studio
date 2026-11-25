@@ -224,7 +224,6 @@ export default function TermsPage() {
               <p>
                 이용자에게 불리한 변경은 변경 내용과 시행일을 시행 30일 전에 이 페이지에 알립니다.
               </p>
-              <p>제보 전달 범위는 담당 개발자로 제한하며, 처리 전 제보에도 보관 상한을 둡니다. 필요한 변경 전후와 적용 정보는 <Link data-act="legal-privacy" href="/privacy#changes">개인정보처리방침의 방침 정보·주요 변경 비교</Link>에서 확인할 수 있습니다.</p>
             </>
           )
         },

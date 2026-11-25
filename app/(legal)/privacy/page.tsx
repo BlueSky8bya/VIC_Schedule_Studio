@@ -1,4 +1,3 @@
-import styles from "@/components/legal/legal-doc.module.css";
 import type { Metadata } from "next";
 import { Ban, EyeOff, LogIn, ShieldCheck } from "lucide-react";
 import {
@@ -389,29 +388,6 @@ export default function PrivacyPage() {
                   ["경찰청 사이버수사국", "182 (국번 없이)", <DocLink href="https://ecrm.police.go.kr" key="e">ecrm.police.go.kr</DocLink>]
                 ]}
               />
-            </>
-          )
-        },
-        {
-          id: "changes",
-          title: "처리방침 변경",
-          body: (
-            <>
-              <p>
-                이용자 권리에 중요한 변경은 변경 내용과 시행일을 시행 30일 전에 이 페이지에 알립니다. 따로 동의가 필요한
-                변경은 시행 전에 동의를 받습니다.
-              </p>
-              <p>기기 내 빅타민 기록: 설정·취향 기억 → 함께 지내며 배운 버릇까지 행동에 반영. 서버 전송은 없습니다.</p>
-              <details className={styles.policyInfo}>
-                <summary data-act="legal-policy-info">방침 정보·주요 변경 비교</summary>
-                <p>현재 방침 적용일: 2026. 11. 26. · 최초 제정: 2026. 11. 13.</p>
-                <LegalTable head={["구분", "변경 전", "현재"]} rows={[
-                  ["빅타민 기록 (2026. 11. 26.)", "화면 속 친구 기록으로 안내", "기기 내 취향·버릇 학습과 끄기·초기화 방법을 구체적으로 안내. 전송 범위 확대 없음"],
-                  ["제보 보관 (2026. 11. 23.)", "처리 완료 후 90일", "처리 완료 후 90일, 처리 전이어도 접수 후 180일 이내 삭제"],
-                  ["제보 열람 범위 (2026. 11. 25.)", "운영자 중 제보 확인 담당자", "개발자만 확인하도록 범위 축소. 종전 방침의 확대 적용은 2026. 11. 23. 이후 접수분에만 해당"],
-                  ["선택 글꼴 (2026. 11. 16.)", "외부 연결 안내 미기재", "선택 시 jsDelivr·네이버 연결 안내 추가"]
-                ]} />
-              </details>
             </>
           )
         }
