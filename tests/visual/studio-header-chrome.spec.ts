@@ -167,6 +167,9 @@ for (const view of [
   expect(initial.home).not.toBeNull(); const home = initial.home!;
   expect(home.firstChild).toBe(true); expect(home.left).toBeCloseTo(home.leftEdge!, 1); expect(home.overlap).toBe(0); expect(home.nativeHit).toBe(true);
   expect(home.width).toBeGreaterThanOrEqual(43.5); expect(home.height).toBeCloseTo(44, 0); expect(home.radius).toBe(initial.pill); expect(home.weight).toBe("600");
+  // 배포 버전 배지는 개발자 전용 — 관리자 화면에는 어디에도 없다(2026-11-26 소유자).
+  if (role === "owner") { expect(initial.badge).toBeNull(); await expect(copy(page)).toHaveCount(0); await expect(page.getByText(/배포 버전/)).toHaveCount(0); }
+  else {
   expect(initial.badge).not.toBeNull(); const badge = initial.badge!;
   expect(badge.position).toBe("fixed"); expect(badge.inHeader).toBe(false); expect(badge.nativeHit).toBe(true); expect(badge.z).toBeLessThan(badge.popupZ);
   expect(badge.left).toBeCloseTo(16, 0); expect(initial.viewport.height - badge.bottom).toBeCloseTo(16, 0); expect(badge.top).toBeGreaterThan(home.bottom);
@@ -180,6 +183,7 @@ for (const view of [
   await settlePanelLayout(page); const copied = await sample(page, "copied"); sameCalendar(initial, copied);
   expect(copied.home!.left).toBeCloseTo(home.left, 1); expect(copied.home!.width).toBeCloseTo(home.width, 1);
   await expect(copy(page)).toHaveText(label, { timeout: 2500 });
+  }
   await nativeActivate(launcher(page)); await expect(room(page)).toBeVisible(); await settlePanelLayout(page);
   sameCalendar(initial, await sample(page, "home-open")); await expect(launcher(page)).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Escape"); await expect(room(page)).toHaveCount(0); await expect(launcher(page)).toBeFocused();
@@ -188,7 +192,7 @@ for (const view of [
     await previewRoundTrip(page, role, false, true);
     sameCalendar(initial, await sample(page, "native-back-returned"));
   }
-  if (view.name === "wide-light" && role === "owner") {
+  if (view.name === "wide-light" && role === "developer") {
     await page.getByRole("button", { name: "패널 펼치기", exact: true }).click();
     const rail = page.locator(".avatar-rail:visible"); await expect(rail).toBeVisible(); await settlePanelLayout(page);
     const layering = await rail.evaluate(node => {

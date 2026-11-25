@@ -9318,11 +9318,12 @@ export function StudioShell({
 
       {/* (하단 플로팅 월 < > 폐지 — 사용자 요청으로 헤더 '‹ 2026년 7월 ›'에 통합.) */}
       {/* PC 하단 메타는 흐름 밖에 두어 달력 높이·문서 높이·집 진입 위치를 바꾸지 않는다.
-          같은1040px/coarse-height capability로 모바일·좁은 agenda에는 마운트하지 않는다. */}
-      {companionDesktop ? (
+          같은1040px/coarse-height capability로 모바일·좁은 agenda에는 마운트하지 않는다.
+          개발자 전용(2026-11-26 소유자): 관리자·관리자 미리보기에는 배포 버전을 어디에도 보이지 않는다. */}
+      {companionDesktop && isDevInsights ? (
         <button
           aria-label={`배포 버전 ${buildSha} 복사`}
-          className={`studio-build-tag studio-build-copy${isDevInsights ? " dev" : ""}`}
+          className="studio-build-tag studio-build-copy dev"
           title="클릭해 복사"
           type="button"
           onClick={copyBuildSha}

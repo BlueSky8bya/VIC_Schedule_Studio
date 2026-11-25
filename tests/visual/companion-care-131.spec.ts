@@ -100,8 +100,8 @@ async function prepare(page: Page, fresh = false) {
 const frames = (page: Page) => page.evaluate(() => (window as ProbeWindow).care131!.frames);
 // Observation labels belong only to this harness, never to application state.
 const phase = (page: Page, value: string) => page.evaluate(value => { (window as ProbeWindow).care131!.phase = value; }, value);
-async function ready(page: Page, studio = false) {
-  await page.goto(studio ? "/visual-fixture/studio?role=owner&y=2025&m=11" : "/visual-fixture/poster?avatar=1"); await page.bringToFront();
+async function ready(page: Page, studio = false, role: "owner" | "developer" = "owner") {
+  await page.goto(studio ? `/visual-fixture/studio?role=${role}&y=2025&m=11` : "/visual-fixture/poster?avatar=1"); await page.bringToFront();
   await page.evaluate(() => document.fonts.ready); await expect(pet(page)).toBeVisible();
   // Full is the production default and intentionally omits data-gfx.
   await expect.poll(() => page.locator("html").evaluate(node => (node as HTMLElement).dataset.gfx ?? "full")).toBe("full");
@@ -165,7 +165,8 @@ test("131 native smiling strokes keep decoded row9 and continue after real focus
 });
 
 test("131 a native toy released below the real studio badge stays present and reacquires a measured viewport floor", async ({ page }) => {
-  await page.setViewportSize({ width: 2400, height: 1100 }); await prepare(page); await ready(page, true); await hold(page, true);
+  // 배지는 개발자 전용이라 개발자 fixture로 연다.
+  await page.setViewportSize({ width: 2400, height: 1100 }); await prepare(page); await ready(page, true, "developer"); await hold(page, true);
   await home(page).locator('[data-home-action="toys"]').click(); const toy = page.locator(".vc-toy").first(); await expect(toy).toBeVisible(); await expect(toy).toHaveAttribute("data-falling", "false");
   const id = await toy.getAttribute("data-toy-id"), badge = page.locator(".studio-build-copy"); await expect(badge).toBeVisible();
   const actualBadge = (await badge.boundingBox())!, viewport = page.viewportSize()!, release = { x: actualBadge.x + actualBadge.width / 2, y: Math.min(viewport.height - 2, actualBadge.y + actualBadge.height + 6) };

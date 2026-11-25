@@ -75,9 +75,9 @@ async function settle(page: Page) {
   await page.evaluate(async () => { await document.fonts.ready; await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished)); });
   await page.waitForTimeout(180);
 }
-async function setup(page: Page, surface: Surface, options: { signedIn?: boolean; dark?: boolean; reduced?: boolean } = {}) {
+async function setup(page: Page, surface: Surface, options: { signedIn?: boolean; dark?: boolean; reduced?: boolean; role?: "owner" | "developer" } = {}) {
   await seed(page, options.dark, options.reduced);
-  await page.goto(surface === "viewer" ? `/visual-fixture/poster?signedIn=${options.signedIn ? "1" : "0"}` : "/visual-fixture/studio?role=owner");
+  await page.goto(surface === "viewer" ? `/visual-fixture/poster?signedIn=${options.signedIn ? "1" : "0"}` : `/visual-fixture/studio?role=${options.role ?? "owner"}`);
   await page.bringToFront(); await settle(page); await installProbe(page);
   await sample(page, "before-initial-visible");
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
@@ -357,7 +357,7 @@ test("compact premiere group5 ownership withdraws the room and recovers its cont
 
 test("a native studio footer build-copy label leaves its open room, launcher and calendar stable", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await setup(page, "studio"); await open(page);
+  await setup(page, "studio", { role: "developer" }); await open(page);
   await page.mouse.move(2, 2); await settle(page);
   const copy = page.locator(".studio-shell .studio-build-copy"), originalLabel = (await copy.textContent())!.trim();
   const originalWidth = (await copy.boundingBox())!.width, before = await sample(page, "before-native-build-copy");
