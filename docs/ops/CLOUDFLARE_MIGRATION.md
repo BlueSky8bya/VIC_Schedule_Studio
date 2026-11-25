@@ -38,7 +38,7 @@
 - **`/api/warm` 삭제:** cron-job.org의 워밍 핑 작업을 끈다(그 전까지는 404, 무해).
 - **안 쓰는 파일:** `revealTeaserAction`, `PublicEventShare`, `WaterTide` 컴포넌트, rail lab 스크립트.
 - **비공개 일정 레이어(코드):** 공개 일정만 읽고 쓴다. 최초공개 게이트 비밀번호(확인·변경)만 남김. `PRIVATE_DATA_ENC_KEY`는 더 쓰지 않는다 → Worker Secret에서 `wrangler secret delete PRIVATE_DATA_ENC_KEY`, `SUPABASE_STORAGE_BUCKET`도 같이.
-- **DB `0159_retire_private_layer.sql`:** 작성만 함, **미적용**. 위 코드가 배포·확인된 뒤 소유자 승인 받고 적용(되돌릴 수 없는 삭제).
+- **DB `0159_retire_private_layer.sql`:** **적용됨** — 2026-11-26 운영 DB 읽기 전용 조회로 확인(event_private_meta·private_unlock_grants·support_campaigns 표, events.secret_cipher·private_layer_settings.unlock_duration_minutes 열, has_private_unlock·is_active_worker 함수, 비공개 읽기 정책 모두 없음).
 - 자체 성능 측정(`perf_samples`·인사이트 '서버 성능')은 유지.
 
 ## 공개 API 캐시 (2026-11-26)

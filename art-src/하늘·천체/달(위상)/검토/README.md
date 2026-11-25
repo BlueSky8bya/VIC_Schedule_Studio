@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 53f787b836286fba32d21086c030ba0088b69ea2ab27c42687ab2faf816a5e78 -->
-<!-- source-sha256: 6df27b2c04536ebe5a648cd345b8311256c5971cbb5dce59cf9747a3201286ed; state-sha256: 689c37daaee2b5bb2c893ea27c47bfa5b7e382a4c8c990dd9a9985387dd4c437 -->
+<!-- content-sha256: 75448ebffca128c2cd4e94b7caca7b7619af32a8aca464a56d740de4fcff3168 -->
+<!-- source-sha256: a87dbad1438c964a8a802e14f878bca2c02df9d64f9086d3b5f573a0b30fc90c; state-sha256: 689c37daaee2b5bb2c893ea27c47bfa5b7e382a4c8c990dd9a9985387dd4c437 -->
 
 # moon-phase 검토
 
