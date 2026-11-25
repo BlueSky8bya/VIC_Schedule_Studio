@@ -1,5 +1,6 @@
 /** Device-local companion preferences. No account, schedule data or server calls. */
 import { normalizeCompanionSoundMuted, type CompanionSoundMoment } from "./sound-moments";
+import { companionIndividualityStore, COMPANION_INDIVIDUAL_KEY } from "./individuality-store";
 
 export const COMPANION_PERSONALITIES = ["performer", "curious", "affectionate", "sleepy", "tidy", "mischievous", "gourmet", "homebody", "balanced"] as const;
 export type CompanionPersonality = typeof COMPANION_PERSONALITIES[number];
@@ -105,6 +106,8 @@ const validPersonality = (value: unknown): value is CompanionPersonality => COMP
  * Reading alone never writes storage or emits a human action. */
 function withDocumentPersonality(preferences: Readonly<CompanionPreferences>): CompanionPreferences {
   let choice = documentPersonalities.get(window);
+  const settled = choice?.manual ? undefined : companionIndividualityStore()?.personality();
+  if (settled) { choice = { personality: settled, manual: false }; documentPersonalities.set(window, choice); }
   if (!choice) {
     const draw = Math.random(), index = Number.isFinite(draw) ? Math.max(0, Math.min(COMPANION_PERSONALITIES.length - 1, Math.floor(draw * COMPANION_PERSONALITIES.length))) : 0;
     choice = { personality: COMPANION_PERSONALITIES[index], manual: false }; documentPersonalities.set(window, choice);
@@ -112,8 +115,22 @@ function withDocumentPersonality(preferences: Readonly<CompanionPreferences>): C
   return { ...preferences, personality: choice.personality };
 }
 
-/** Only the persisted provenance pair can pin a new document. Legacy/random
- * records do not identify a human choice; reset also releases a prior pin. */
+/** Settle only when an enabled client actually mounts, never during SSR/read. */
+export function activateCompanionPersonality(): CompanionPreferences {
+  const current = getCompanionPreferences();
+  if (typeof window === "undefined" || !current.enabled) return current;
+  const chosen = companionIndividualityStore()?.settle(current.personality) ?? current.personality;
+  if (!documentPersonalities.get(window)?.manual && chosen !== current.personality) {
+    documentPersonalities.set(window, { personality: chosen, manual: false });
+    const next = { ...current, personality: chosen };
+    window.dispatchEvent(new CustomEvent(COMPANION_PREFERENCES_EVENT, { detail: next }));
+    return next;
+  }
+  return current;
+}
+
+/** Explicit manual provenance wins over the separately settled automatic
+ * child. Ordinary settings writes never turn an automatic choice into manual. */
 function adoptStoredPreferences(stored: StoredPreferences): CompanionPreferences {
   if (stored.manualPersonality) documentPersonalities.set(window, { personality: stored.manualPersonality, manual: true });
   else if (documentPersonalities.get(window)?.manual) documentPersonalities.delete(window);
@@ -197,13 +214,14 @@ export function companionPersonalityIsManual(): boolean {
   getCompanionPreferences();
   return documentPersonalities.get(window)?.manual === true;
 }
-/** "무작위로 되돌리기": drop only the mark that the character was picked by
- * hand. The character stays as it is for this page; the next load draws
- * again. Every other choice is written back unchanged, and the record gains
- * no field: the mark is simply absent, exactly as before a first pick. */
+/** Explicit random selection draws once and settles that same child. Ordinary
+ * reloads no longer reroll it. All other choices and earned records survive. */
 export function releaseCompanionPersonalityChoice(): CompanionPreferences {
-  const current = getCompanionPreferences();
-  if (typeof window === "undefined") return current;
+  const previous = getCompanionPreferences();
+  if (typeof window === "undefined") return previous;
+  const draw = Math.random(), index = Number.isFinite(draw) ? Math.max(0, Math.min(COMPANION_PERSONALITIES.length - 1, Math.floor(draw * COMPANION_PERSONALITIES.length))) : 0;
+  const current = { ...previous, personality: COMPANION_PERSONALITIES[index] };
+  companionIndividualityStore()?.settle(current.personality, true);
   documentPersonalities.set(window, { personality: current.personality, manual: false });
   volatilePreferences = current;
   try {
@@ -218,6 +236,10 @@ export function subscribeCompanionPreferences(listener: (preferences: CompanionP
   if (typeof window === "undefined") return () => {};
   const changed = (event: Event) => listener(withDocumentPersonality(normalizeCompanionPreferences((event as CustomEvent<unknown>).detail)));
   const stored = (event: StorageEvent) => {
+    if (event.key === COMPANION_INDIVIDUAL_KEY) {
+      companionIndividualityStore()?.synchronize();
+      listener(getCompanionPreferences()); return;
+    }
     if (event.key === COMPANION_PREFERENCES_KEY || event.key === null) {
       // An explicit change/reset in another tab wins over an unwritten local
       // override, even if its new serialized value equals the previous bytes.

@@ -1,0 +1,260 @@
+{
+  "phase": "reviewed release candidate",
+  "base": "742de77b",
+  "upstream": "5d84a62e",
+  "checks": {
+    "build": "exit0, source hashes unchanged",
+    "typecheck": "exit0",
+    "lint": "exit0",
+    "harness": "462 documents PASS",
+    "unit": {
+      "files": 490,
+      "passed": 7495,
+      "skipped": 1
+    }
+  },
+  "independent": {
+    "reviewers": 3,
+    "findingsFixed": 5,
+    "finalReview": "no additional actionable finding"
+  },
+  "actualApp": {
+    "scope": "actual production Next fixture SSR/RSC/hydration, original public/studio shared client code; no listener; API stubs; no real auth/RLS/Cloudflare edge",
+    "steps": [
+      {
+        "step": "actual UI reset and cancel preserve manual personality/assets",
+        "pass": true
+      },
+      {
+        "step": "actual app keyboard contact learns",
+        "pass": true
+      },
+      {
+        "step": "reload preserves learned data/manual personality/assets",
+        "pass": true
+      },
+      {
+        "step": "explicit random UI choice settles automatic personality through reload",
+        "pass": true
+      },
+      {
+        "step": "OFF rejects actual contact with available credit",
+        "startingCredit": 1,
+        "pass": true
+      },
+      {
+        "step": "cat mode rejects contact with available credit",
+        "startingCredit": 1,
+        "pass": true
+      },
+      {
+        "step": "dog mode rejects contact with available credit",
+        "startingCredit": 1,
+        "pass": true
+      },
+      {
+        "step": "epoch receipt before fresh Enter",
+        "state": "idle",
+        "visible": true,
+        "individual": {
+          "version": 1,
+          "personality": "gourmet",
+          "learning": {
+            "generation": 5,
+            "credit": 1,
+            "contexts": {
+              "home": {
+                "contact": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "company": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "sharing": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "novelty": {
+                  "value": 0,
+                  "evidence": 0
+                }
+              },
+              "outside": {
+                "contact": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "company": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "sharing": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "novelty": {
+                  "value": 0,
+                  "evidence": 0
+                }
+              }
+            },
+            "places": {
+              "home": {
+                "value": 0,
+                "evidence": 0
+              },
+              "card": {
+                "value": 0,
+                "evidence": 0
+              },
+              "floor": {
+                "value": 0,
+                "evidence": 0
+              }
+            }
+          }
+        }
+      },
+      {
+        "step": "epoch receipt after fresh Enter",
+        "state": "idle",
+        "individual": {
+          "version": 1,
+          "personality": "gourmet",
+          "learning": {
+            "generation": 5,
+            "credit": 0,
+            "contexts": {
+              "home": {
+                "contact": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "company": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "sharing": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "novelty": {
+                  "value": 0,
+                  "evidence": 0
+                }
+              },
+              "outside": {
+                "contact": {
+                  "value": -0.065,
+                  "evidence": 1
+                },
+                "company": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "sharing": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "novelty": {
+                  "value": 0,
+                  "evidence": 0
+                }
+              }
+            },
+            "places": {
+              "home": {
+                "value": 0,
+                "evidence": 0
+              },
+              "card": {
+                "value": 0,
+                "evidence": 0
+              },
+              "floor": {
+                "value": 0.05,
+                "evidence": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "step": "production chunks reject old held release after same-task OFF/ON and learn fresh Enter",
+        "oldEvidence": 0,
+        "newContactEvidence": 1,
+        "pass": true
+      },
+      {
+        "step": "normal short pointer departure learns negative contact",
+        "pass": true
+      },
+      {
+        "step": "normal long pointer departure learns positive contact",
+        "pass": true
+      },
+      {
+        "step": "in-progress contact cancelled by actual app external speed storage event",
+        "credit": 1,
+        "evidence": 0,
+        "pass": true
+      },
+      {
+        "step": "in-progress contact cancelled by settings window",
+        "credit": 1,
+        "evidence": 0,
+        "pass": true
+      },
+      {
+        "step": "native tab deactivation receipt",
+        "before": {
+          "hidden": false,
+          "focused": true
+        },
+        "during": {
+          "hidden": false,
+          "focused": true,
+          "events": []
+        },
+        "after": {
+          "hidden": false,
+          "focused": true,
+          "events": []
+        }
+      },
+      {
+        "step": "native blur unavailable in this headless browser",
+        "status": "NOT EXERCISED",
+        "reason": "tab activation kept document focused and visible without native blur/visibility events"
+      },
+      {
+        "step": "installed actual blur handler cancels contact under explicit focus-state fixture",
+        "credit": 1,
+        "evidence": 0,
+        "pass": true
+      },
+      {
+        "step": "390 hydrated privacy disclosure and terms exclude detailed operational history",
+        "pass": true
+      }
+    ],
+    "network": {
+      "requests": 663,
+      "writes": 0,
+      "canaryHits": 0
+    },
+    "errors": [],
+    "serverGuards": {
+      "listen": 0,
+      "fetch": []
+    }
+  },
+  "limits": [
+    "Native focus transition not exercised by headless: document stayed focused and emitted no blur/visibility event. Actual installed handler passed with explicit focus fixture.",
+    "Actual Google owner login and DB RLS not certified by synthetic role fixture. No auth/token manipulation or production DB mutation.",
+    "localStorage stamp detects stale snapshots but is not a cross-process atomic transaction."
+  ],
+  "deployment": "not yet pushed; record actual deployment separately"
+}

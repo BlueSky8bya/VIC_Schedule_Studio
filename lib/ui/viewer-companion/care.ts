@@ -2,6 +2,7 @@ import { DEFAULT_COMPANION_HABITS, normalizeCompanionHabits, type CompanionHabit
 import { createCompanionLife, DEFAULT_COMPANION_LIFE, normalizeCompanionLife, resetCompanionLife, summarizeCompanionLife, type CompanionLife } from "./life";
 import { getCompanionLearnedEffectDirections } from "./behavior-profile";
 import { COMPANION_PERSONALITIES } from "./preferences";
+import { companionIndividualityStore } from "./individuality-store";
 
 /** Device-local needs only. No identity, schedule text, dates or elapsed-away
  * timestamp is retained: an absent owner never incurs hunger or care debt. */
@@ -187,6 +188,7 @@ export function saveCompanionCare(care: CompanionCareInput, force = false): Comp
 /** Erases only learned habits. Needs and manually chosen preferences remain. */
 export function resetCompanionHabits(): CompanionHabits {
   const habits = store()?.resetHabits().habits ?? { ...DEFAULT_COMPANION_HABITS };
+  companionIndividualityStore()?.reset(habits.generation);
   return { ...habits };
 }
 

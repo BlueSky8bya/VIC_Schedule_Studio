@@ -88,8 +88,8 @@ export function CompanionTraitControls({ preferences, onChange, active, personal
         <div><strong>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</strong><p>{COMPANION_PERSONALITY_SUMMARIES[preferences.personality]}</p></div>
       </div> : null}
       <div className="rhh-personality-random">
-        <p aria-live="polite" className="rhh-group-foot">{manual ? "직접 고른 성격이라 새로고침해도 그대로예요." : "고르지 않았다면 새로고침마다 무작위로 정해져요."}</p>
-        <button className="rhh-link" data-act="companion-personality-random" disabled={!manual} onClick={() => { releaseCompanionPersonalityChoice(); setManual(false); /* the button now goes off: hand focus to the character that stays */ section.current?.querySelector<HTMLButtonElement>('[role="radio"][aria-checked="true"]')?.focus({ preventScroll: true }); }} type="button"><span className="vmid">무작위로 되돌리기</span></button>
+        <p aria-live="polite" className="rhh-group-foot">{manual ? "직접 고른 성격이라 새로고침해도 그대로예요." : "함께 지내는 빅타민의 성격은 다음에 와도 이어져요."}</p>
+        <button className="rhh-link" data-act="companion-personality-random" disabled={!manual} onClick={() => { releaseCompanionPersonalityChoice(); setManual(false); /* The automatic choice now stays across reloads. Focus its selected card. */ section.current?.querySelector<HTMLButtonElement>('[role="radio"][aria-checked="true"]')?.focus({ preventScroll: true }); }} type="button"><span className="vmid">무작위로 되돌리기</span></button>
       </div>
     </div>
   </div>;

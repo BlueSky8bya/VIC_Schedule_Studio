@@ -1,5 +1,10 @@
 "use client";
 
+import { activateCompanionPersonality, getCompanionPreferences, COMPANION_PREFERENCES_EVENT, COMPANION_PREFERENCES_KEY } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_INDIVIDUAL_KEY, companionIndividualityStore } from "@/lib/ui/viewer-companion/individuality-store";
+import { learnCompanionIndividuality, type CompanionIndividualExperience, type CompanionIndividualContext } from "@/lib/ui/viewer-companion/individuality";
+import { createCompanionInteractionLearning } from "@/lib/ui/viewer-companion/interaction-learning";
+
 import { createCompanionPoseWitness } from "@/lib/ui/viewer-companion/memory-witness";
 import { recordCompanionObservedExpression, recordCompanionObservedPose, recordCompanionCompletedActivity } from "@/lib/ui/viewer-companion/collection";
 import { companionActivityMemory } from "@/lib/ui/viewer-companion/memory-catalog";
@@ -196,6 +201,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
   const foodDiscarded = useRef<(id: string) => void>(() => {});
   // Audio sliders do not restart geometry, the brain or decoded body owners.
   const worldPreferencesKey = companionWorldPreferencesKey(preferences);
+  const [individualWorldEpoch, setIndividualWorldEpoch] = useState(0);
   const actorId = useId();
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
@@ -401,6 +407,39 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     const gfxMode = () => graphicsMode;
     if (!careLoaded.current) { brain.current = { ...brain.current, ...loadCompanionCare() }; careLoaded.current = true; }
     else { const saved = loadCompanionCare(); brain.current = { ...brain.current, habits: saved.habits, life: saved.life }; }
+    activateCompanionPersonality();
+    const individualStore = companionIndividualityStore();
+    brain.current = { ...brain.current, individuality: individualStore?.load(brain.current.habits?.generation ?? 0) };
+    const interactionLearning = createCompanionInteractionLearning();
+    let individualLearningCurrent = true;
+    // Settings notifications can precede React's effect cleanup. Cancel before
+    // another direct input can complete a contact from the previous world.
+    const cancelIndividualOnPreferences = () => {
+      const next = companionBehaviorPreferences(getCompanionPreferences(), storedMotion);
+      if (companionWorldPreferencesKey(next) !== worldPreferencesKey) {
+        if (individualLearningCurrent) setIndividualWorldEpoch(value => value + 1);
+        individualLearningCurrent = false; interactionLearning.reset();
+      }
+    };
+    window.addEventListener(COMPANION_PREFERENCES_EVENT, cancelIndividualOnPreferences);
+    const individualContext = (): CompanionIndividualContext => isHomeSupport(support) ? "home" : "outside";
+    const individualPlace = () => isHomeSupport(support) ? "home" as const : supportById(support)?.kind === "card" ? "card" as const : "floor" as const;
+    const learnIndividual = (kind: CompanionIndividualExperience, context = individualContext(), place = individualPlace()) => {
+      if (!individualLearningCurrent || !preferencesRef.current.enabled || !preferencesRef.current.learnFromYou || preferencesRef.current.animalMode !== "default" || document.hidden) return;
+      const current = brain.current.individuality;
+      if (!current || current.generation !== loadCompanionCare().habits.generation) { interactionLearning.reset(); return; }
+      const next = learnCompanionIndividuality(current, kind, context, place, true);
+      if (next !== current) {
+        if (individualStore?.save(next) === false) {
+          interactionLearning.reset();
+          brain.current = { ...brain.current, individuality: individualStore.load(current.generation) };
+        } else brain.current = { ...brain.current, individuality: next };
+      }
+    };
+    const finishIndividualContact = (force = false) => {
+      const ended = interactionLearning.finish(brain.current.activeMs, brain.current.habits?.generation ?? 0, force);
+      if (ended) learnIndividual(ended.kind, ended.context, ended.place);
+    };
     loadCompanionCollection();
     if (!sceneStore.current) {
       let storage: Storage | undefined; try { storage = window.localStorage; } catch { /* local storage can be unavailable */ }
@@ -420,6 +459,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         && (!autonomous || sameCompanionAgentGeneration(epoch.generation, brain.current.habits?.generation ?? 0) && epoch.personality === preferencesRef.current.personality),
     });
     const syncAgentMemory = (event: StorageEvent) => {
+      if (event.key === null || event.key === COMPANION_PREFERENCES_KEY) cancelIndividualOnPreferences();
+      if (event.key === null || event.key === COMPANION_INDIVIDUAL_KEY) {
+        individualStore?.synchronize(); interactionLearning.reset();
+        brain.current = { ...brain.current, individuality: individualStore?.load(brain.current.habits?.generation ?? 0) };
+      }
       if (event.key !== null && event.key !== COMPANION_AGENT_EXPERIENCE_KEY) return;
       agentMemory.restore(agentStore.current?.synchronize(event.key === null ? null : event.newValue, brain.current.habits?.generation ?? 0, preferencesRef.current.learnFromYou));
     };
@@ -458,6 +502,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     const sceneEvent = (event: CompanionSceneEvent) => {
       scenes.event(event, brain.current.activeMs, preferences.learnFromYou);
       const at = brain.current.activeMs;
+      if (preferencesRef.current.enabled && preferencesRef.current.learnFromYou && preferencesRef.current.animalMode === "default" && !document.hidden) {
+        if (event.kind === "petted") interactionLearning.contact(at, brain.current.habits?.generation ?? 0, individualContext(), individualPlace());
+        if (event.kind === "home-called") learnIndividual("home-called");
+        if (event.kind === "meal" && event.first) interactionLearning.discovered(at, brain.current.habits?.generation ?? 0, individualContext());
+      }
       if (event.kind === "encounter" || event.kind === "home-called") personalityDirector.event("arrival", at);
       if (event.kind === "petted") { personalityDirector.event("pet", at); learnAgent("petted", undefined, false); }
       if ((event.kind === "radio" && radioAllowed()) || event.kind === "instrument") {
@@ -506,8 +555,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     };
     let lastMemorySave = performance.now();
     let resetSceneSerial: number | undefined;
-    const resetLearningMemory = (deferSceneCancel = false) => {
+    const resetLearningMemory = (deferSceneCancel = false, resetGeneration = brain.current.habits?.generation ?? 0) => {
       agentMemory.clear(); agentStore.current?.clear(); learnedPlaces.clear(); washLearningCredit = false;
+      interactionLearning.reset();
+      const generation = resetGeneration;
+      individualStore?.reset(generation);
+      brain.current = { ...brain.current, individuality: individualStore?.load(generation) };
       // A pre-reset contact may finish its body reaction, but cannot teach
       // the erased accident again when the completed clip acknowledges it.
       if (action?.toyMishap) action = { ...action, toyMishap: undefined };
@@ -524,10 +577,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       const saved = saveCompanionCare(brain.current, force);
       // A forced meal save can run inside the completed-action stack. Wipe
       // memory now; cancel that exact legacy scene at the next existing tick.
-      agentMemoryGeneration = reconcileCompanionAgentExperienceGeneration(agentMemoryGeneration, saved.habits.generation, () => resetLearningMemory(true));
+      agentMemoryGeneration = reconcileCompanionAgentExperienceGeneration(agentMemoryGeneration, saved.habits.generation, () => resetLearningMemory(true, saved.habits.generation));
       brain.current = { ...brain.current, habits: saved.habits, life: saved.life };
       flushCompanionCollection(force); sceneStore.current?.save(scenes.checkpoint(), preferences.learnFromYou);
-      agentStore.current?.save(agentMemory.snapshot(), agentMemoryGeneration, preferencesRef.current.learnFromYou); lastMemorySave = performance.now();
+      agentStore.current?.save(agentMemory.snapshot(), agentMemoryGeneration, preferencesRef.current.learnFromYou);
+      if (preferencesRef.current.learnFromYou && brain.current.individuality && individualStore?.save(brain.current.individuality) === false) {
+        interactionLearning.reset();
+        brain.current = { ...brain.current, individuality: individualStore.load(brain.current.habits?.generation ?? 0) };
+      }
+      lastMemorySave = performance.now();
     };
     const offHabits = subscribeCompanionHabits(habits => {
       const reset = habits.generation !== (brain.current.habits?.generation ?? 0);
@@ -560,13 +618,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       persistCare(true);
       return true;
     };
-    let transferRecovery = false;
+    let transferRecovery = false, individualTransferGeneration = -1;
     const beginManualTransfer = () => {
+      individualTransferGeneration = brain.current.habits?.generation ?? 0;
       cancelManualWash();
       transferRecovery = performance.now() < mishapUntil || brain.current.places.some(place => place.failures > 0 && place.retryAfter > brain.current.activeMs
         && (place.id === support || place.id === brain.current.intention?.targetId || waitingForSupport));
     };
-    const transferred = (thrown = false, rough = false) => { if (!rough) { experience("played"); manualLandingPending = { recovered: transferRecovery }; } transferRecovery = false; logActivity("ui.click", { target: thrown ? "companion-throw" : "companion-drag" }); };
+    const transferred = (thrown = false, rough = false) => { if (!rough) { experience("played"); if (individualTransferGeneration === (brain.current.habits?.generation ?? 0)) learnIndividual(interactionLearning.play(brain.current.activeMs, individualTransferGeneration, individualContext())); manualLandingPending = { recovered: transferRecovery }; } transferRecovery = false; logActivity("ui.click", { target: thrown ? "companion-throw" : "companion-drag" }); };
     const publishCare = () => {
       const { hunger, affection, energy, curiosity } = brain.current;
       const next = { hunger: Math.round(hunger * 100) / 100, affection: Math.round(affection * 100) / 100, energy: Math.round(energy * 100) / 100, curiosity: Math.round(curiosity * 100) / 100 };
@@ -2288,7 +2347,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     // an ordinary resident follows the shared visible-background permission.
     const hoverEligible = () => !pause && !workspaceBusyRef.current && !premiereActive && !premiereBounce && !returning && !el.hidden && (isDetailGuest() ? document.hasFocus() && !document.hidden : visibleActive()) && preferences.petting && (isDetailGuest() ? !overlayDrag && !guestKeyboardHeld : !hiding && !overlayActive && presence.phase === "active" && !pressed && !keyboardHeld && !placing && !pendingMonth && !awaitingAtX && !(action && ["walk", "jump", "heart", "hide", "eat"].includes(action.kind)));
     const canHover = (point: { x: number; y: number }) => hoverEligible() && pettingWindow.contains(pettingPoint(point), pettingBase, performance.now());
-    const stopHover = () => {
+    const stopHover = (completed = false) => {
+      if (completed) finishIndividualContact(true);
+      else interactionLearning.cancelContact();
       petting.reset(); touch.reset(); pettingWindow.reset(); hoverPetting = false; hoverPoint = undefined;
       interactionUntil = 0; hoverTarget = null;
       el.removeAttribute("data-petting"); style(contactLayer, "transform", "translate3d(0,0,0) rotate(0deg) scale(1,1)");
@@ -2319,7 +2380,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       const bodyFrame = interactionFrame(), horizontalReach = bodyFrame.size * .68;
       const point = { x: event.clientX, y: event.clientY };
       const now = performance.now();
-      if (event.pointerType !== "mouse" || event.buttons !== 0 || !hoverEligible() || !(target instanceof Element) || isOtherControl(target) || !pettingWindow.move(pettingPoint(point), pettingBase, now)) { stopHover(); return; }
+      const eligible = hoverEligible();
+      if (event.pointerType !== "mouse" || event.buttons !== 0 || !eligible || !(target instanceof Element) || isOtherControl(target) || !pettingWindow.move(pettingPoint(point), pettingBase, now)) { stopHover(eligible && event.pointerType === "mouse" && event.buttons === 0); return; }
       hoverPoint = point;
       hoverTarget = target;
       const normalized = (event.clientX - bodyFrame.x) / (bodyFrame.size * .76) + .5;
@@ -2339,6 +2401,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         if (!isDetailGuest()) { afterPetLanding = !supportedNow(); restAfterLanding = false; clearForPetting(); }
       }
       if (result.reward) affection();
+      if (result.stroking) interactionLearning.touch(brain.current.activeMs);
       hoverPetting = true; petUntil = now + 650; if (!isDetailGuest()) nextDecision = petUntil + 500;
       data("petting", "hover");
       inputPaint(9, reduced ? 0 : ((now - hoverStarted) % COMPANION_TIMING.petLoop) / COMPANION_TIMING.petLoop * 15, "petted");
@@ -2346,7 +2409,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     const leave = (event: PointerEvent) => {
       // pointerleave precedes the next document move. Yield to its real
       // destination before a reversal can award affection over another control.
-      if (!event.relatedTarget || isOtherControl(event.relatedTarget)) stopHover();
+      if (!event.relatedTarget || isOtherControl(event.relatedTarget)) stopHover(Boolean(event.relatedTarget) && hoverEligible());
       else hover(event, event.relatedTarget);
     };
     const outsideDocument = (event: PointerEvent) => { if (!event.relatedTarget) { stopHover(); pointer = pointerAnchor = undefined; } };
@@ -3114,6 +3177,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         paint(9, reduced ? 0 : ((now - petStarted) % COMPANION_TIMING.petLoop) / COMPANION_TIMING.petLoop * 15, "petted"); schedule(); return;
       }
       if (hoverPetting) { hoverPetting = false; if (hoverPoint) data("petting", "ready"); else el.removeAttribute("data-petting"); petting.reset(); }
+      finishIndividualContact();
       if (el.dataset.state === "petted" && effect.current) effect.current.textContent = "";
       if (afterPetLanding) { afterPetLanding = false; settle({ x, y }); }
       // Count only the brain's active time. Tab absence/modal sleep neither
@@ -5364,7 +5428,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         if (kind === "pet" && preferencesRef.current.petting) { acknowledgeAffection(); playCompanionSound("pet", preferencesRef.current, "direct"); }
         else if (kind === "bonk" && preferencesRef.current.petting) { experience("bonked"); logActivity("ui.click", { target: "companion-bonk" }); }
         else if (kind === "shake" && preferencesRef.current.drag) { hurtTrust("rough-play", performance.now()); logActivity("ui.click", { target: "companion-shake" }); }
-        else if ((kind === "drag" || kind === "throw") && preferencesRef.current.drag) { brain.current = recordCompanionEvent(brain.current, "dragged"); if (kind === "drag") experience("played"); logActivity("ui.click", { target: kind === "throw" ? "companion-throw" : "companion-drag" }); }
+        else if ((kind === "drag" || kind === "throw") && preferencesRef.current.drag) { brain.current = recordCompanionEvent(brain.current, "dragged"); if (kind === "drag") { experience("played"); learnIndividual(interactionLearning.play(brain.current.activeMs, brain.current.habits?.generation ?? 0, individualContext())); } logActivity("ui.click", { target: kind === "throw" ? "companion-throw" : "companion-drag" }); }
         else if (kind === "rest" && preferencesRef.current.sleep) { logActivity("ui.click", { target: "companion-rest" }); playCompanionSound("sleep", preferencesRef.current, "direct"); }
         else if (kind === "rested" && preferencesRef.current.sleep) { brain.current = recordCompanionEvent(brain.current, "rested"); persistCare(true); publishCare(); }
       },
@@ -5432,6 +5496,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       window.removeEventListener(COMPANION_WORK_SIGNAL, workSignal);
       window.removeEventListener("pagehide", sceneDepart);
       window.removeEventListener("storage", syncAgentMemory);
+      window.removeEventListener(COMPANION_PREFERENCES_EVENT, cancelIndividualOnPreferences);
       foodDiscarded.current = () => {};
       window.removeEventListener("blur", focusChanged); window.removeEventListener("focus", focusChanged);
       window.removeEventListener("resize", parkedLayout); window.removeEventListener("scroll", parkedLayout, true); window.removeEventListener("vic:companion-home", parkedLayout);
@@ -5453,7 +5518,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       hideBed();
       el.removeAttribute("data-native-sofa"); front?.removeAttribute("data-native-sofa"); clearSofaNames();
     };
-  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, pathname, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession, sceneMaterial, visibilityRecovery]);
+  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, pathname, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession, sceneMaterial, visibilityRecovery, storedMotion, individualWorldEpoch]);
 
   if (!ready) return null;
   const closeHome = homeShelf.close;

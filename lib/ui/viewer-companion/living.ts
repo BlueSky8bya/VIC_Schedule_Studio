@@ -42,10 +42,13 @@ export function getLivingAction(brain: CompanionBrain, world: CompanionWorld, pr
   const home = companionPrivateHomeSupport(support.id);
   if (support.manualOnly && !home) return;
   const here = { x: world.x, y: world.y, platformId: support.id }, life = prefs.learnFromYou === false ? DEFAULT_COMPANION_LIFE : brain.life ?? DEFAULT_COMPANION_LIFE;
-  const profile = getCompanionBehaviorProfile(prefs, brain.habits);
+  const profile = getCompanionBehaviorProfile(prefs, brain.habits, brain.individuality, home ? "home" : "outside");
   const promptSocial = prefs.animalMode === "dog" || prefs.personality === "affectionate";
   const pointer = world.pointer && [world.pointer.x, world.pointer.y, world.pointer.stableMs].every(Number.isFinite) && world.pointer.stableMs! >= (promptSocial ? 200 : 900) ? world.pointer : undefined;
-  const play = (kind: CompanionPlay, living: CompanionLivingKind): CompanionAction => ({ kind: "play", play: kind, living, livingCooldownMs: profile.livingCooldownMs, target: here, duration: companionPlayDuration(kind), ...(living === "social" && pointer ? { attention: { kind: "social", point: { x: pointer.x, y: pointer.y } } } : {}) });
+  const play = (kind: CompanionPlay, living: CompanionLivingKind): CompanionAction => ({ kind: "play", play: kind, living,
+    livingCooldownMs: Math.min(COMPANION_LIVING_COOLDOWN, profile.livingCooldownMs * (prefs.animalMode === "default" && brain.livingRhythm?.kind === living
+      ? 1 + brain.livingRhythm.repeats * .35 * Math.max(0, 1 - (brain.activeMs - brain.livingRhythm.activeMs) / 120000) : 1)),
+    target: here, duration: companionPlayDuration(kind) * (living === "social" ? profile.socialDurationScale : 1), ...(living === "social" && pointer ? { attention: { kind: "social", point: { x: pointer.x, y: pointer.y } } } : {}) });
   const social = Boolean(prefs.petting && prefs.roam && brain.energy >= .28 && pointer && !home && Math.abs(pointer.y - world.y) < 150 && Math.abs(pointer.x - world.x) <= 220);
   const wary = prefs.learnFromYou !== false && (brain.habits?.confidence ?? 0) <= -.12;
   // Learned caution changes the next voluntary encounter, never captures the

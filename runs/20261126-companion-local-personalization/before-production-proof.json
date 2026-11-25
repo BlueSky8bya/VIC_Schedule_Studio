@@ -1,0 +1,19 @@
+{
+  "phase": "before",
+  "domain": "https://victory-broadcast.com",
+  "automaticDisclosure": "고르지 않았다면 새로고침마다 무작위로 정해져요.\n\n무작위로 되돌리기",
+  "errors": [],
+  "writes": 0,
+  "blockedNonGET": [
+    {
+      "path": "/cdn-cgi/rum",
+      "method": "POST"
+    },
+    {
+      "path": "/",
+      "method": "POST"
+    }
+  ],
+  "requests": 186,
+  "scope": "anonymous real deployed browser; local preferences only; no login/DB mutations"
+}
