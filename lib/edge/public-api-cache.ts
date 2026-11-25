@@ -4,12 +4,13 @@
 // Next 렌더 + DB 왕복이었다(실측: 같은 검색어를 연달아 불러도 매번 1.1~2.2초, 60초마다 도는 방송 확인도 매번).
 // 여기서는 라우트가 이미 선언한 수명(s-maxage, stale-while-revalidate)을 그대로 지킬 뿐 새 수명을 만들지 않는다.
 // 규칙은 **허용 목록**: 아래 경로의 GET, 쿠키·로그인과 무관하게 같은 응답을 내는 라우트만(각 라우트는 쿠키·헤더를
-// 읽지 않는다). 일정 전체(/events)와 최초공개 상태(/teaser-state)는 편집·공개 시각이 바로 보여야 해서 넣지 않는다.
+// 읽지 않는다). 일정 전체(/events)는 소유자 허용(2026-11-26, 편집 반영 최대 1분)으로 넣고 라우트 수명을 60초 안으로 줄였다.
+// 최초공개 상태(/teaser-state)는 공개 시각이 바로 보여야 해서 넣지 않는다.
 // 이 파일은 wrangler(esbuild)가 그대로 묶으므로 `@/` 별칭 없이 상대 경로만 import한다.
 import { CACHED_AT_HEADER, EDGE_CACHE_HEADER, cachedAgeSeconds } from "./anon-home-cache";
 
 const ORIGIN_CACHE_CONTROL_HEADER = "x-vic-origin-cache-control";
-const PUBLIC_ROUTE = /^\/api\/public\/[^/]+\/(search|search\/suggest|search\/trending|broadcast|vod-timeline|vod-chat)$/;
+const PUBLIC_ROUTE = /^\/api\/public\/[^/]+\/(events|search|search\/suggest|search\/trending|broadcast|vod-timeline|vod-chat)$/;
 const NEXT_INTERNAL_HEADERS = ["rsc", "next-router-state-tree", "next-router-prefetch", "next-router-segment-prefetch", "next-action"];
 
 // 캐시 가능한 요청이면 열쇠(합성 URL)를, 아니면 null(우회)을 돌려준다. 쿼리는 순서만 달라도 같은 열쇠가 되게 정렬한다.

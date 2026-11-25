@@ -34,11 +34,11 @@ function context() {
 describe("public API edge cache key", () => {
   it("covers only the allow-listed anonymous GET routes", () => {
     for (const path of ["/api/soop-live", SEARCH, "/api/public/vic/search/suggest?q=a", "/api/public/vic/search/trending",
-      "/api/public/vic/broadcast?year=2026&month=11", "/api/public/vic/vod-timeline?titleNo=1", "/api/public/vic/vod-chat?titleNo=1"]) {
+      "/api/public/vic/broadcast?year=2026&month=11", "/api/public/vic/vod-timeline?titleNo=1", "/api/public/vic/vod-chat?titleNo=1", "/api/public/vic/events"]) {
       expect(publicApiCacheKey(req(path)), path).not.toBeNull();
     }
     // 편집·공개 시각이 바로 보여야 하는 것, 로그인 화면, 쓰기 요청은 대상이 아니다.
-    for (const path of ["/", "/studio", "/api/public/vic/events", "/api/public/vic/teaser-state", "/api/public/vic/teaser-state/abc",
+    for (const path of ["/", "/studio", "/api/public/vic/teaser-state", "/api/public/vic/teaser-state/abc",
       "/api/public/clock", "/api/studio-write", "/api/cron/broadcast-poll", "/api/public/vic/search/extra"]) {
       expect(publicApiCacheKey(req(path)), path).toBeNull();
     }
@@ -77,7 +77,7 @@ describe("serveWithPublicApiCache", () => {
   it("passes other requests straight through untouched", async () => {
     const cache = memoryCache(), ctx = context();
     const original = json({ a: 1 }, "public, s-maxage=300");
-    const out = await serveWithPublicApiCache(req("/api/public/vic/events"), ctx, async () => original, cache);
+    const out = await serveWithPublicApiCache(req("/api/public/vic/teaser-state"), ctx, async () => original, cache);
     expect(out).toBe(original);
     expect(cache.store.size).toBe(0);
   });

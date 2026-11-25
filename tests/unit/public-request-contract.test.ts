@@ -13,7 +13,7 @@ vi.mock("@/lib/perf/perf", () => ({ ServerTiming: class {
 } }));
 
 const cases = [
-  { name: "events", query: "", duplicate: "x=1&x=2", ttl: "public, s-maxage=300" },
+  { name: "events", query: "", duplicate: "x=1&x=2", ttl: "public, s-maxage=30, stale-while-revalidate=30" },
   { name: "broadcast", query: "year=2026&month=10", duplicate: "year=2026&year=2025&month=10", ttl: "public, s-maxage=60" },
   { name: "vod-chat", query: "titleNo=42", duplicate: "titleNo=42&titleNo=43", ttl: "public, max-age=0, s-maxage=30" },
   { name: "vod-timeline", query: "titleNo=42", duplicate: "titleNo=42&titleNo=43", ttl: "public, max-age=0, s-maxage=60" },

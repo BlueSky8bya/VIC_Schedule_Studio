@@ -44,7 +44,7 @@
 ## 공개 API 캐시 (2026-11-26)
 
 - `cloudflare/worker.ts` → `lib/edge/public-api-cache.ts`. Cloudflare는 Worker가 만든 응답을 CDN에 담지 않아, 라우트의 `s-maxage`가 이전 뒤로 효과가 없었다(같은 검색어도 매번 1~2초). 라우트가 **이미 선언한** `s-maxage`·`stale-while-revalidate`만큼만 Workers Cache API에 담는다 — 새 수명을 만들지 않는다.
-- 대상(허용 목록): `/api/soop-live`, `/api/public/<slug>/search`·`search/suggest`·`search/trending`·`broadcast`·`vod-timeline`·`vod-chat`의 GET. `/events`(편집 반영)와 `/teaser-state`(공개 시각)는 넣지 않는다. 새 공개 라우트를 담으려면 그 라우트가 쿠키·헤더를 읽지 않는지 확인하고 목록에 추가한다.
+- 대상(허용 목록): `/api/soop-live`, `/api/public/<slug>/events`·`search`·`search/suggest`·`search/trending`·`broadcast`·`vod-timeline`·`vod-chat`의 GET. `/events`는 소유자 허용(2026-11-26)으로 넣었고 수명은 30초 + 뒤에서 새로 만들기 30초 = **편집이 시청자 화면(첫 화면 밖 달)에 최대 60초 늦게** 반영된다. `/teaser-state`(공개 시각)는 넣지 않는다. 새 공개 라우트를 담으려면 그 라우트가 쿠키·헤더를 읽지 않는지 확인하고 목록에 추가한다.
 - 담지 않는 응답: 200이 아닌 것(503 실패 포함), Set-Cookie, `Vary: Cookie|Authorization|*`, `public`+`s-maxage`가 없는 것.
 - 확인: 응답 헤더 `x-vic-edge-cache: miss|hit|stale|bypass`.
 

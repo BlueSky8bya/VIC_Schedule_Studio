@@ -31,10 +31,10 @@ export async function GET(request: Request, { params }: PublicEventsRouteProps) 
   return NextResponse.json(schedule, {
     headers: {
       "Server-Timing": st.header(),
-      // 개인 정보가 없는 익명 응답 → CDN에서 합쳐 람다 왕복을 줄인다(방송 라우트와 같은 한 겹 원칙,
-      // SWR 없음). 주기는 밑단 Data Cache(300초)와 맞춘다. 편집 반영: 포스터(SSR)는 revalidateTag로
-      // 즉시, 이 API만 최악 CDN 300 + Data Cache 300 = 몇 분 늦을 수 있다 — 외부 소비자용이라 허용.
-      "Cache-Control": "public, s-maxage=300"
+      // 개인 정보가 없는 익명 응답 → Worker 엣지 캐시(lib/edge/public-api-cache.ts)가 이 수명대로 담는다.
+      // 시청자 첫 화면이 창 밖 달을 이 API로 채우므로 편집 반영 지연 = 이 수명. 소유자 2026-11-26: 최대 1분까지 허용
+      // → 30초 그대로 + 30초는 내주면서 뒤에서 새로 만듦(합 60초). 밑단 Data Cache는 쓰기마다 revalidateTag로 즉시 비워진다.
+      "Cache-Control": "public, s-maxage=30, stale-while-revalidate=30"
     }
   });
 }
