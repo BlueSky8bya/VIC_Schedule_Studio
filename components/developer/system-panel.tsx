@@ -7,6 +7,7 @@ import { PlainEmail } from "@/components/ui/plain-email";
 import { getSystemInfoAction, type SystemInfo } from "@/lib/insights/actions";
 import { getPerfStatsAction, type PerfStatRow } from "@/lib/insights/perf-actions";
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
+import { PrivacyHistory } from "./privacy-history";
 import { LoadingState } from "@/components/shared/loading-state";
 
 // 시스템 묶음(설정 창 '개발자' 탭, 개발자 전용) — 계정 연결·배포 버전·서버 성능.
@@ -179,6 +180,7 @@ export function SystemPanel() {
         </div>
       </div>
       <p className="rhh-group-foot">단위 ms · p95 = 느린 5% 기준선(빨강 ≥300, 주황 ≥120)</p>
+      <PrivacyHistory />
     </>
   );
 }

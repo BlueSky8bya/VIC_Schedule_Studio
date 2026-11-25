@@ -12,7 +12,8 @@ import { advanceCompanionHabits, DEFAULT_COMPANION_HABITS, type CompanionHabits 
 import { createCompanionContext, pendingCompanionMealId, planCompanionEpisode, type CompanionEpisode } from "./episodes";
 import { advanceCompanionLife, getCompanionFoodPreference, type CompanionLife } from "./life";
 import { companionFoodApproachScale, COMPANION_LIVING_COOLDOWN, getLivingAction, type CompanionLivingKind } from "./living";
-import { companionMayAddressAudience } from "./life-space";
+import { companionMayAddressAudience, companionPrivateHomeSupport } from "./life-space";
+import { advanceCompanionIndividuality, companionPlaceAffinity, type CompanionIndividuality } from "./individuality";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -92,9 +93,12 @@ export type CompanionWorld = {
   pointer?: { x: number; y: number; stableMs?: number };
 };
 export type CompanionBrain = CompanionCare & {
+  individuality?: CompanionIndividuality;
   habits?: CompanionHabits;
   life?: CompanionLife;
   recentLiving?: CompanionLivingKind[];
+  /** Session-only habituation; active time lets interest recover without absence debt. */
+  livingRhythm?: { kind: CompanionLivingKind; activeMs: number; repeats: number };
   pendingLiving?: { kind: "social" | "cozy"; supportId: string };
   createdAt: number;
   recent: CompanionActionKind[];
@@ -273,6 +277,7 @@ export function advanceBrain(brain: CompanionBrain, elapsedMs: number, learning 
     activeMs: (brain.activeMs ?? 0) + seconds * 1000,
     affect: advanceCompanionAffect(brain.affect ?? createCompanionAffect(), seconds * 1000),
     habits: advanceCompanionHabits(brain.habits, seconds * 1000, learning),
+    individuality: brain.individuality ? advanceCompanionIndividuality(brain.individuality, seconds * 1000, learning) : undefined,
     ...(brain.life ? { life: advanceCompanionLife(brain.life, seconds * 1000, learning) } : {}),
   };
 }
@@ -310,6 +315,8 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
   const remaining = action.foodId && action.intention?.kind === "feed" ? Math.max(0, Math.min(COMPANION_FEED_ACTION_BUDGET, action.intention.remaining) - 1) : undefined;
   return {
     ...brain,
+    livingRhythm: action.living && action.kind !== "walk" ? { kind: action.living, activeMs: brain.activeMs,
+      repeats: brain.livingRhythm?.kind === action.living && brain.activeMs - brain.livingRhythm.activeMs < 120000 ? Math.min(4, brain.livingRhythm.repeats + 1) : 1 } : brain.livingRhythm,
     pendingLiving: action.living === "social" && action.kind === "walk" ? { kind: "social", supportId: action.target.platformId ?? "" } : action.living === "cozy" && action.play === "doze-curl" ? { kind: "cozy", supportId: action.target.platformId ?? "" } : undefined,
     recentLiving: action.living && action.kind === "play" ? [...(brain.recentLiving ?? []), action.living].slice(-3) : brain.recentLiving,
     // A few curious steps should not exhaust an initially healthy creature.
@@ -358,7 +365,7 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
     // A measured clear interval is one walk, not a chain of180px restarts.
     // Only a selected, physically proved meal hop needs a takeoff endpoint.
     let step = first;
-    const profile = getCompanionBehaviorProfile(prefs, brain.habits), speed = profile.walkSpeed;
+    const profile = getCompanionBehaviorProfile(prefs, brain.habits, brain.individuality, companionPrivateHomeSupport(world.platformId) ? "home" : "outside"), speed = profile.walkSpeed;
     const episode = brain.episode, current = world.platforms.find(p => p.id === world.platformId);
     if (first.kind === "walk" && sameSupport && current && !current.manualOnly && current.kind !== "control" && current.kind !== "hide" && !current.id.startsWith("companion-home")
       && food.platformId === current.id && Math.abs(food.y - current.y) <= 4 && world.animated && prefs.jump && prefs.animalMode !== "cat" && brain.energy >= .35
@@ -402,7 +409,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   if (foodAction) return foodAction;
   const living = getLivingAction(brain, world, prefs, now, rng);
   if (living) return living;
-  const profile = getCompanionBehaviorProfile(prefs, brain.habits);
+  const profile = getCompanionBehaviorProfile(prefs, brain.habits, brain.individuality, companionPrivateHomeSupport(world.platformId) ? "home" : "outside");
   // A rare toe-tap starts only on the actual occupied arrow. The renderer
   // rechecks its exact live control at impact; no remote button targeting.
   if (prefs.roam && prefs.panelPrank && current?.kind === "control" && current.panelSide
@@ -420,7 +427,10 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
     if ((brain.cooldowns[kind] ?? -Infinity) > now) return;
     const repeats = brain.recent.slice(-4).filter(item => item === kind).length;
     const lastPenalty = brain.recent.at(-1) === kind ? .35 : 1;
-    candidates.push({ action: { kind, target, duration, ...(effectPoint ? { effectPoint } : {}), ...movement }, utility: Math.max(0, utility) * lastPenalty / (1 + repeats * .65) });
+    const destination = world.platforms.find(platform => platform.id === target.platformId);
+    const place = destination?.id.startsWith("companion-home") ? "home" : destination?.kind === "card" ? "card" : "floor";
+    const affinity = prefs.animalMode === "default" && prefs.learnFromYou !== false ? companionPlaceAffinity(brain.individuality, place) : 0;
+    candidates.push({ action: { kind, target, duration, ...(effectPoint ? { effectPoint } : {}), ...movement }, utility: Math.max(0, utility) * lastPenalty / (1 + repeats * .65) * (1 + affinity * .18) });
   };
   const curious = prefs.personality === "curious" ? .35 : 0;
   const affectionate = prefs.personality === "affectionate" ? .3 : 0;

@@ -1,5 +1,6 @@
 import type { CompanionAction, CompanionBehaviorPreferences, CompanionBrain, CompanionRouteStep, CompanionWorld, Platform } from "./brain";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
+import { companionPrivateHomeSupport } from "./life-space";
 
 export type CompanionIntention = {
   kind: "explore" | "rest" | "feed";
@@ -53,7 +54,7 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
   const platforms = world.platforms.slice(0, 200), current = platforms.find(p => p.id === world.platformId);
   if (!current || Math.abs(current.y - world.y) > 18) return { outcomes };
   const memories = brain.places ?? [], activeMs = brain.activeMs ?? 0;
-  const profile = getCompanionBehaviorProfile(prefs, brain.habits), speed = profile.walkSpeed;
+  const profile = getCompanionBehaviorProfile(prefs, brain.habits, brain.individuality, companionPrivateHomeSupport(world.platformId) ? "home" : "outside"), speed = profile.walkSpeed;
   const pursue = (intention: CompanionIntention, proven?: CompanionRouteStep[]): CompanionAction | undefined => {
     const target = platforms.find(p => p.id === intention.targetId && safe(p));
     const hasGait = intention.pace !== undefined || intention.travelSpeed !== undefined;

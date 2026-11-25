@@ -1,3 +1,4 @@
+import { companionIndividualEffects } from "./individuality";
 import { findPlatformRoute, platformLandingX, type CompanionAction, type CompanionBrain, type CompanionPlay, type CompanionWorld } from "./brain";
 import { findCompanionPointerRoute } from "./reactive-cues";
 import { companionMealRouteAvailable, companionToyFoodPriority, findCompanionToyRoute, MAX_COMPANION_TOYS, type CompanionToy } from "./toys";
@@ -1230,7 +1231,11 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
           const context = atHome(world.platformId) ? "home" : "outside";
           const ranked = candidates.map((candidate, index) => {
             const purpose = family(candidate), value = purpose ? input.experience!.score({ personality: p.personality, context, family: purpose, learn: true }) : 0;
-            return { candidate, score: Number.isFinite(value) ? Math.max(-.1,Math.min(.2,value)) : 0, index };
+            const individual = companionIndividualEffects(p.animalMode === "default" ? brain.individuality : undefined, context);
+            const personal = purpose === "social" || purpose === "play" ? individual.sharing * .08
+              : purpose === "explore" ? individual.novelty * .08
+              : purpose === "home" || purpose === "rest" ? individual.company * .08 : 0;
+            return { candidate, score: (Number.isFinite(value) ? Math.max(-.1,Math.min(.2,value)) : 0) + personal, index };
           });
           if (ranked.some(item => item.score !== 0)) recipe = ranked.sort((a,b) => (b.score + Number(b.index === preferred) * .04) - (a.score + Number(a.index === preferred) * .04))[0].candidate;
         }

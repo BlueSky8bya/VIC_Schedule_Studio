@@ -56,10 +56,10 @@ export function LegalDoc({
               <p className={styles.eyebrow}>{SITE_NAME}</p>
               <h1>{title}</h1>
               <dl className={styles.meta}>
-                <div>
+                {kind !== "privacy" && <div>
                   <dt>시행일</dt>
                   <dd>{effective}</dd>
-                </div>
+                </div>}
                 <div>
                   <dt>문의</dt>
                   <dd>

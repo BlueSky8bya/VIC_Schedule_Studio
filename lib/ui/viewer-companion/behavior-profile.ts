@@ -1,10 +1,11 @@
 import type { CompanionPreferences } from "./preferences";
 import { normalizeCompanionHabits, type CompanionHabits } from "./habits";
+import { companionIndividualEffects, type CompanionIndividuality, type CompanionIndividualContext } from "./individuality";
 
 /** Three independent authored axes, not a learned model of an animal. Species
  * supplies habits, personality supplies motivation, gait supplies rhythm.
  * The renderer still proves every route and owns the one world/pose clock. */
-export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "animalMode" | "personality" | "speed"> & Partial<Pick<CompanionPreferences, "learnFromYou">>, habits?: CompanionHabits) {
+function baseBehaviorProfile(prefs: Pick<CompanionPreferences, "animalMode" | "personality" | "speed"> & Partial<Pick<CompanionPreferences, "learnFromYou">>, habits?: CompanionHabits) {
   const cat = prefs.animalMode === "cat", dog = prefs.animalMode === "dog";
   const affectionate = prefs.personality === "affectionate", sleepy = prefs.personality === "sleepy";
   const tidy = prefs.personality === "tidy", mischievous = prefs.personality === "mischievous";
@@ -76,6 +77,23 @@ export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "a
     scootChance: bound(base.scootChance * (1 + playfulness * .2), 0, .98),
     tidyWeight: bound(base.tidyWeight * (1 - playfulness * .2 + confidence * .08), 0, 1.2),
     mischiefWeight: bound(base.mischiefWeight * (1 + playfulness * .35 + confidence * .15), 0, 1.5),
+  };
+}
+
+/** Experience changes how this child approaches a situation, never its species,
+ * gait, allowed actions or needs. Cats/dogs retain their established profiles. */
+export function getCompanionBehaviorProfile(prefs: Parameters<typeof baseBehaviorProfile>[0], habits?: CompanionHabits, individuality?: CompanionIndividuality, where: CompanionIndividualContext = "outside") {
+  const base = baseBehaviorProfile(prefs, habits);
+  const effects = companionIndividualEffects(prefs.animalMode === "default" && prefs.learnFromYou !== false ? individuality : undefined, where);
+  return { ...base,
+    pointerGap: base.pointerGap * (1 + effects.company * .16),
+    socialPull: Math.max(0, Math.min(3, base.socialPull + effects.sharing * .3)),
+    noveltyWeight: base.noveltyWeight * (1 + effects.novelty * .2),
+    lookScale: base.lookScale * (1 - effects.novelty * .12 + effects.company * .08),
+    pauseScale: base.pauseScale * (1 + effects.company * .12),
+    homeWeight: base.homeWeight * (1 + effects.company * .2),
+    socialDurationScale: 1 + effects.contact * .25,
+    observationScale: 1 - effects.novelty * .15,
   };
 }
 

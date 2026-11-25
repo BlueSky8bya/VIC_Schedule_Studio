@@ -4,6 +4,12 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-11-26
+
+### CHG-20261126-001 — Local companion individuality and policy clarity
+
+Local implementation on codex/companion-local-personalization; not integrated or deployed. Optional device memory settles automatic temperament and learns bounded interaction tendencies without modifying existing preferences/care/assets or uploading data. Existing OFF/reset gates apply. Privacy clarification stays static/public; operational history uses an actual-developer server check. Recovery: scoped code revert, leave the optional local key unused; no DB operation. Verification and outstanding renderer/review gates: [plan](plans/PLAN-20261126-companion-local-personalization.md), [decision](decisions/ADR-0032-companion-local-individuality.md).
+
 ## v0.1.0 — 2026-10-25
 
 ### CHG-20261025-001 — Share one public event and recover copied login entries
