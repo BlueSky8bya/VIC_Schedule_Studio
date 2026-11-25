@@ -3,6 +3,7 @@
 // 빌드 산출물(.open-next)은 `opennextjs-cloudflare build` 뒤에만 생긴다(tsconfig에서 제외, wrangler esbuild가 묶음).
 import handler from "../.open-next/worker.js";
 import { serveWithAnonHomeCache } from "../lib/edge/anon-home-cache";
+import { serveWithPublicApiCache } from "../lib/edge/public-api-cache";
 
 type Env = { CRON_SECRET?: string; NEXT_PUBLIC_SITE_URL?: string };
 type Ctx = { waitUntil(p: Promise<unknown>): void; passThroughOnException?(): void };
@@ -14,10 +15,11 @@ const CRON_ROUTES: Record<string, string> = {
 };
 
 const worker = {
-  // 익명 `/`만 짧게 캐시한다(규칙·이유: lib/edge/anon-home-cache.ts). 나머지 요청은 그대로 Next로.
+  // 익명 `/`를 짧게 캐시하고(lib/edge/anon-home-cache.ts), 공개 API는 라우트가 선언한 수명만큼 담는다
+  // (lib/edge/public-api-cache.ts). 나머지 요청은 그대로 Next로.
   fetch(request: Request, env: Env, ctx: Ctx) {
     const cache = (caches as unknown as { default: { match(k: string): Promise<Response | undefined>; put(k: string, r: Response): Promise<void> } }).default;
-    return serveWithAnonHomeCache(request, ctx, (req) => handler.fetch(req, env, ctx), cache);
+    return serveWithAnonHomeCache(request, ctx, (home) => serveWithPublicApiCache(home, ctx, (req) => handler.fetch(req, env, ctx), cache), cache);
   },
 
   async scheduled(controller: { cron: string }, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {

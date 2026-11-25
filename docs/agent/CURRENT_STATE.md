@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-11-23 (KST)
+Last Updated: 2026-11-26 (KST)
 Project Version: 0.1.0
 
 Current work only; history is evidence, not instructions. Previous state: [snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt).
@@ -30,6 +30,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 | DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |
 | OPS-CLOUDFLARE-MOVE | Live, cleanup pending | Live on victory-broadcast.com via Workers Builds (Vercel paused until 2026-12-13, no further use). Branch cleanup/post-cloudflare removes Vercel leftovers and private-layer code; 0159 written, not applied (owner approval after deploy check) | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
 | PERF-LOADING-20261114 | Released, watch | Confirm production `Cache-Control` on `/_next/static/*`. Studio still duplicates schedule payload; window it like `/` if refresh stays slow. Released headers/Tori-hop details: memory snapshot | [tori-hop](../../components/shared/tori-hop.tsx) |
+| PERF-API-EDGE-CACHE-20261126 | Released, watch | Public API routes were uncached on Cloudflare (Worker responses bypass the CDN). Worker now stores the allow-listed routes for their declared `s-maxage`; confirm `x-vic-edge-cache: hit` in production. `/events`(1.2s, uncached) and OpenNext regional cache stay out: both trade edit freshness, owner call | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
 | PERF-SOFT-RENDER-20261123 | Released, watch | GPU-off/4xCPU improvements recorded in UI-46 and the memory snapshot below. Open: single-card drag preview still re-renders studio; drag ghosts use left/top; real OBS hardware unmeasured | [UI-46](../ux/UI_RULES.md) |
 | OPS-UNATTENDED-20261123 | Released;0173 applied, test mail11-23 | Developer stepping back. Owner-account inbox/passcode-reset checks pending (fixtures/unit only). Owner leaves DB growth unchanged;400MB alert. Released details: runbook/snapshot | [Runbook](../ops/UNATTENDED_OPERATION.md) |
 | OPS-STORAGE | Watch | Gate released;6 deleted;quota refresh unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |
