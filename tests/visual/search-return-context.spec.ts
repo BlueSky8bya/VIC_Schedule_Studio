@@ -149,7 +149,7 @@ test("search return studio: intercepted save refreshes cached results and preser
   }));
   await selected.click();
   const beforeSave = await beforeSavePick;
-  await page.locator('[role="textbox"], textarea, input[type="text"]').first().fill("합성 수정 일정");
+  await page.locator('.event-editor-panel [role="textbox"]').first().fill("합성 수정 일정");
   await page.keyboard.press("Control+Enter"); await expect.poll(() => syntheticWrites.length).toBeGreaterThan(0);
   await page.keyboard.press("Escape"); await open(page);
   await expect(input(page)).toHaveValue("갱신검색"); await expect(dialog(page).locator(".ps-event").first()).toContainText("갱신");
@@ -158,7 +158,7 @@ test("search return studio: intercepted save refreshes cached results and preser
   await expect.poll(() => dialog(page).locator(".ps-body").evaluate(el => el.scrollTop).then(top => Math.abs(top-beforeSave))).toBeLessThan(3);
   policy.removeSelected = true;
   await dialog(page).locator(".ps-event.is-cursor").click();
-  await page.locator('[role="textbox"], textarea, input[type="text"]').first().fill("합성 수정 두 번째");
+  await page.locator('.event-editor-panel [role="textbox"]').first().fill("합성 수정 두 번째");
   await page.keyboard.press("Control+Enter"); await expect.poll(() => syntheticWrites.length).toBeGreaterThan(1);
   await page.keyboard.press("Escape"); await open(page);
   await expect(dialog(page).locator(".ps-event")).toHaveCount(27);

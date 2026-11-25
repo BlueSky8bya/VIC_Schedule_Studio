@@ -22,6 +22,8 @@ test.beforeEach(async ({ page }) => {
   const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const publicReads = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
   expect(publicReads.size).toBe(1);
+  // The developer header's report inbox asks for its unseen count on mount (a read, 2026-11-13) — same local answer as helpers/companion-qa.ts.
+  const unseenReports = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getUnseenReportCountAction").map(([id]) => id));
   await page.route("**/*", route => {
     const request = route.request(), path = new URL(request.url()).pathname;
     // A public preview read uses POST transport. Only this exact built action
@@ -29,6 +31,11 @@ test.beforeEach(async ({ page }) => {
     if (request.method() === "POST" && path === "/visual-fixture/studio" && publicReads.has(request.headers()["next-action"])) {
       evidence.reads++;
       return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
+    }
+    if (request.method() === "POST" && path === "/visual-fixture/studio" && unseenReports.has(request.headers()["next-action"])) {
+      return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}
+1:0
+` });
     }
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) {
       evidence.writes.push(`${request.method()} ${path}`);
@@ -84,7 +91,7 @@ async function sample(page: Page, phase: string) {
     const chrome = header ? [...header.querySelectorAll(".studio-month-label,.studio-role-tools")].filter(visible).map(rect) : [];
     return { calendar: rect(calendar), scrollY, height: document.documentElement.scrollHeight, viewport: { width: innerWidth, height: innerHeight, clientWidth: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }, zoom: root.zoom, radius: root.getPropertyValue("--r-md").trim(), pill: root.getPropertyValue("--r-pill").trim(), cells,
       badge: badge ? { ...rect(badge), nativeHit: hit(badge), position: getComputedStyle(badge).position, z: Number(getComputedStyle(badge).zIndex), inHeader: Boolean(badge.closest(".studio-topbar")), popupZ: Number(root.getPropertyValue("--z-cal-pop").trim() || 12) } : null,
-      home: home && visible(home) ? { ...rect(home), nativeHit: hit(home), radius: getComputedStyle(home).borderRadius, weight: getComputedStyle(home).fontWeight, leftEdge: left ? rect(left).left : null, firstChild: Boolean(left?.firstElementChild?.contains(home)), overlap: chrome.reduce((sum, peer) => sum + overlap(rect(home), peer), 0) } : null };
+      home: home && visible(home) ? { ...rect(home), nativeHit: hit(home), radius: getComputedStyle(home).borderRadius, weight: getComputedStyle(home).fontWeight, rightEdge: left ? rect(left).right : null, lastChild: Boolean(left?.lastElementChild?.contains(home)), overlap: chrome.reduce((sum, peer) => sum + overlap(rect(home), peer), 0) } : null };
   });
   proof.get(page)!.samples.push({ phase, value }); return value;
 }
@@ -165,7 +172,8 @@ for (const view of [
   expect(hoverMaterials[0]).toEqual(hoverMaterials[1]); expect(hoverMaterials[0].radius).toBe(initial.radius);
   await page.mouse.move(2, 2); await settlePanelLayout(page);
   expect(initial.home).not.toBeNull(); const home = initial.home!;
-  expect(home.firstChild).toBe(true); expect(home.left).toBeCloseTo(home.leftEdge!, 1); expect(home.overlap).toBe(0); expect(home.nativeHit).toBe(true);
+  // 헤더 왼쪽 칸 순서(2026-11-13 소유자: 시청자 헤더와 같게): 설정 → 밝기 → (개발자 제보함) → 집 진입.
+  expect(home.lastChild).toBe(true); expect(home.right).toBeCloseTo(home.rightEdge!, 1); expect(home.overlap).toBe(0); expect(home.nativeHit).toBe(true);
   expect(home.width).toBeGreaterThanOrEqual(43.5); expect(home.height).toBeCloseTo(44, 0); expect(home.radius).toBe(initial.pill); expect(home.weight).toBe("600");
   // 배포 버전 배지는 개발자 전용 — 관리자 화면에는 어디에도 없다(2026-11-26 소유자).
   if (role === "owner") { expect(initial.badge).toBeNull(); await expect(copy(page)).toHaveCount(0); await expect(page.getByText(/배포 버전/)).toHaveCount(0); }
@@ -184,6 +192,8 @@ for (const view of [
   expect(copied.home!.left).toBeCloseTo(home.left, 1); expect(copied.home!.width).toBeCloseTo(home.width, 1);
   await expect(copy(page)).toHaveText(label, { timeout: 2500 });
   }
+  // 접힌 패널의 집은 처음 한 번 저절로 열려 있다(a44f46a2, 2026-10-19). 먼저 닫아 '눌러서 열기'를 실제로 검사한다.
+  if (await launcher(page).getAttribute("aria-expanded") === "true") { await nativeActivate(launcher(page)); await expect(room(page)).toHaveCount(0); await expect(launcher(page)).toHaveAttribute("aria-expanded", "false"); }
   await nativeActivate(launcher(page)); await expect(room(page)).toBeVisible(); await settlePanelLayout(page);
   sameCalendar(initial, await sample(page, "home-open")); await expect(launcher(page)).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Escape"); await expect(room(page)).toHaveCount(0); await expect(launcher(page)).toBeFocused();
