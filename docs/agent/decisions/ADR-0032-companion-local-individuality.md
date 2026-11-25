@@ -23,3 +23,6 @@ Keep required policy timing/comparison publicly accessible in a collapsed inform
 A shared browser profile has one companion; no inference of distinct people. New settings, devices or browser-data deletion cannot recover memories from a server. Reverting code can ignore the optional new key without deleting old preferences/assets. No DB migration or data cleanup is required.
 
 Implementation and evidence: [plan](../plans/PLAN-20261126-companion-local-personalization.md). The actual renderer was exercised in a bounded offline React wrapper. Next app hydration/topology and independent integration review remain separate gates, not proven by that wrapper, unit tests or static document screenshots.
+
+
+Independent review added controller-epoch cancellation for preference notifications (including OFF→ON in one task), context-correct behavior inputs, and optimistic same-generation storage stamps with reload on conflict. Native cross-process atomic storage is not guaranteed. Actual Next production SSR/RSC/hydration and role fixtures are verified; native focus, genuine owner login/RLS and production edge remain separately scoped in the report.

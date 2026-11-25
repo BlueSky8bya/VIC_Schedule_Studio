@@ -1,239 +1,260 @@
 {
-  "dateKst": "2026-11-26",
-  "base": "742de77bd02792b2d702047fb71263c1908f76e8",
-  "branch": "codex/companion-local-personalization",
-  "released": false,
-  "renderer": {
-    "scope": "actual React ViewerCompanion offline wrapper, synthetic geometry; not Next hydration/server/RLS",
-    "samples": 193,
-    "durationMs": 38406,
-    "visibleSamples": 193,
-    "decodedVisibleSamples": 193,
-    "states": [
-      "idle",
-      "petted",
-      "play",
-      "walk",
-      "look",
-      "sniff",
-      "eat",
-      "jump"
-    ],
-    "poses": [
-      "0",
-      "144",
-      "146",
-      "147",
-      "149",
-      "151",
-      "152",
-      "1",
-      "2",
-      "513",
-      "145",
-      "148",
-      "150",
-      "3",
-      "4",
-      "473",
-      "476",
-      "479",
-      "474",
-      "477",
-      "472",
-      "475",
-      "478",
-      "367",
-      "304",
-      "305",
-      "158",
-      "154",
-      "31",
-      "25",
-      "16",
-      "20",
-      "24",
-      "29",
-      "19",
-      "22",
-      "27",
-      "30",
-      "153",
-      "155",
-      "156",
-      "457",
-      "463",
-      "56",
-      "68",
-      "74",
-      "81",
-      "90",
-      "104",
-      "111",
-      "159",
-      "61",
-      "69",
-      "76",
-      "87",
-      "92",
-      "101",
-      "93",
-      "110",
-      "459",
-      "157"
-    ],
-    "positions": 25,
+  "phase": "reviewed release candidate",
+  "base": "742de77b",
+  "upstream": "5d84a62e",
+  "checks": {
+    "build": "exit0, source hashes unchanged",
+    "typecheck": "exit0",
+    "lint": "exit0",
+    "harness": "462 documents PASS",
+    "unit": {
+      "files": 490,
+      "passed": 7495,
+      "skipped": 1
+    }
+  },
+  "independent": {
+    "reviewers": 3,
+    "findingsFixed": 5,
+    "finalReview": "no additional actionable finding"
+  },
+  "actualApp": {
+    "scope": "actual production Next fixture SSR/RSC/hydration, original public/studio shared client code; no listener; API stubs; no real auth/RLS/Cloudflare edge",
     "steps": [
-      "keyboard pet",
-      "OFF preserves learning",
-      "keyboard pickup move release",
-      "cat mode",
-      "dog mode",
-      "reset preserves collection",
-      "real pointer strokes",
-      "reload"
+      {
+        "step": "actual UI reset and cancel preserve manual personality/assets",
+        "pass": true
+      },
+      {
+        "step": "actual app keyboard contact learns",
+        "pass": true
+      },
+      {
+        "step": "reload preserves learned data/manual personality/assets",
+        "pass": true
+      },
+      {
+        "step": "explicit random UI choice settles automatic personality through reload",
+        "pass": true
+      },
+      {
+        "step": "OFF rejects actual contact with available credit",
+        "startingCredit": 1,
+        "pass": true
+      },
+      {
+        "step": "cat mode rejects contact with available credit",
+        "startingCredit": 1,
+        "pass": true
+      },
+      {
+        "step": "dog mode rejects contact with available credit",
+        "startingCredit": 1,
+        "pass": true
+      },
+      {
+        "step": "epoch receipt before fresh Enter",
+        "state": "idle",
+        "visible": true,
+        "individual": {
+          "version": 1,
+          "personality": "gourmet",
+          "learning": {
+            "generation": 5,
+            "credit": 1,
+            "contexts": {
+              "home": {
+                "contact": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "company": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "sharing": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "novelty": {
+                  "value": 0,
+                  "evidence": 0
+                }
+              },
+              "outside": {
+                "contact": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "company": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "sharing": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "novelty": {
+                  "value": 0,
+                  "evidence": 0
+                }
+              }
+            },
+            "places": {
+              "home": {
+                "value": 0,
+                "evidence": 0
+              },
+              "card": {
+                "value": 0,
+                "evidence": 0
+              },
+              "floor": {
+                "value": 0,
+                "evidence": 0
+              }
+            }
+          }
+        }
+      },
+      {
+        "step": "epoch receipt after fresh Enter",
+        "state": "idle",
+        "individual": {
+          "version": 1,
+          "personality": "gourmet",
+          "learning": {
+            "generation": 5,
+            "credit": 0,
+            "contexts": {
+              "home": {
+                "contact": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "company": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "sharing": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "novelty": {
+                  "value": 0,
+                  "evidence": 0
+                }
+              },
+              "outside": {
+                "contact": {
+                  "value": -0.065,
+                  "evidence": 1
+                },
+                "company": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "sharing": {
+                  "value": 0,
+                  "evidence": 0
+                },
+                "novelty": {
+                  "value": 0,
+                  "evidence": 0
+                }
+              }
+            },
+            "places": {
+              "home": {
+                "value": 0,
+                "evidence": 0
+              },
+              "card": {
+                "value": 0,
+                "evidence": 0
+              },
+              "floor": {
+                "value": 0.05,
+                "evidence": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "step": "production chunks reject old held release after same-task OFF/ON and learn fresh Enter",
+        "oldEvidence": 0,
+        "newContactEvidence": 1,
+        "pass": true
+      },
+      {
+        "step": "normal short pointer departure learns negative contact",
+        "pass": true
+      },
+      {
+        "step": "normal long pointer departure learns positive contact",
+        "pass": true
+      },
+      {
+        "step": "in-progress contact cancelled by actual app external speed storage event",
+        "credit": 1,
+        "evidence": 0,
+        "pass": true
+      },
+      {
+        "step": "in-progress contact cancelled by settings window",
+        "credit": 1,
+        "evidence": 0,
+        "pass": true
+      },
+      {
+        "step": "native tab deactivation receipt",
+        "before": {
+          "hidden": false,
+          "focused": true
+        },
+        "during": {
+          "hidden": false,
+          "focused": true,
+          "events": []
+        },
+        "after": {
+          "hidden": false,
+          "focused": true,
+          "events": []
+        }
+      },
+      {
+        "step": "native blur unavailable in this headless browser",
+        "status": "NOT EXERCISED",
+        "reason": "tab activation kept document focused and visible without native blur/visibility events"
+      },
+      {
+        "step": "installed actual blur handler cancels contact under explicit focus-state fixture",
+        "credit": 1,
+        "evidence": 0,
+        "pass": true
+      },
+      {
+        "step": "390 hydrated privacy disclosure and terms exclude detailed operational history",
+        "pass": true
+      }
     ],
-    "errors": 0,
-    "requests": 109,
-    "allRequestsLocalReadOnly": true,
-    "canaryAbsent": true
-  },
-  "pointer": {
-    "scope": "actual pointer input with existing QA stationary-motion fixture, real time",
-    "hoverAdmitted": true,
-    "contact": {
-      "value": 0.065,
-      "evidence": 1
+    "network": {
+      "requests": 663,
+      "writes": 0,
+      "canaryHits": 0
     },
-    "errors": 0
-  },
-  "harness": {
-    "base": "742de77bd02792b2d702047fb71263c1908f76e8",
-    "ruleInventory": {
-      "before": "6dbaea5cf6e7506457d7019bbb2a92be5ed0c6f421affb35355cb2c7a413bf67",
-      "after": "6dbaea5cf6e7506457d7019bbb2a92be5ed0c6f421affb35355cb2c7a413bf67",
-      "same": true,
-      "expected": "8ccd71dd803f6a57b634680c014b8e04dc51be4807a05193fbae49bc21bae35f",
-      "baselineAlreadyMismatched": true,
-      "baselineTableMismatched": true
-    },
-    "art": {
-      "stale": 46,
-      "conflicts": 0,
-      "unchangedTrackedInputs": true,
-      "noUntrackedInputs": true
-    },
-    "limitation": "Baseline rule inventory evaluated directly. Art baseline inferred from byte-identical tracked inputs and identical catalog code; no art regeneration."
+    "errors": [],
+    "serverGuards": {
+      "listen": 0,
+      "fetch": []
+    }
   },
   "limits": [
-    "Offline actual React component and local files; no Next router hydration, production app topology, real login or RLS proof.",
-    "Canary network check ran with existing automation guard; no production analytics bypass.",
-    "Nine personalities and long-session behavior not exhaustively certified by this bounded run.",
-    "Independent non-author role/boundary/UX/QA review remains before integration."
+    "Native focus transition not exercised by headless: document stayed focused and emitted no blur/visibility event. Actual installed handler passed with explicit focus fixture.",
+    "Actual Google owner login and DB RLS not certified by synthetic role fixture. No auth/token manipulation or production DB mutation.",
+    "localStorage stamp detects stale snapshots but is not a cross-process atomic transaction."
   ],
-  "checks": {
-    "typecheck": "PASS",
-    "lint": "PASS",
-    "productionBuild": "PASS",
-    "unit": {
-      "files": 489,
-      "passed": 7482,
-      "skipped": 0,
-      "durationSeconds": 112.86
-    },
-    "harness": "FAIL: inherited inventory/table and art46 drift",
-    "memory": "PASS",
-    "diffWhitespace": "PASS",
-    "reportImages": {
-      "count": 10,
-      "widths": [
-        1440,
-        390
-      ],
-      "allLoaded": true,
-      "horizontalOverflow": false
-    }
-  },
-  "productSources": [
-    {
-      "file": "app/(legal)/privacy/page.tsx",
-      "sha256": "1b7a42ab41823748951a1f0b0bd8796fdc2118117ca862c447f6837daa316d89"
-    },
-    {
-      "file": "components/developer/privacy-history.tsx",
-      "sha256": "9fda5028020f4a2edeb9cd988d621d3c8dcb76fe5dabc52fb46e3e06349672b8"
-    },
-    {
-      "file": "components/developer/system-panel.tsx",
-      "sha256": "5730e9268b42021028634f9df03be7b6a74da06d97034edd078a3b1481cf56e0"
-    },
-    {
-      "file": "components/legal/legal-doc.module.css",
-      "sha256": "75affc4e67929e7baf79e77ca659a86a96304beb20c30426139a656f980fe262"
-    },
-    {
-      "file": "components/legal/legal-doc.tsx",
-      "sha256": "f3b505caebfc88a3eb25761b21248f44eface9ca7ac1c1408ed69d6e47e34226"
-    },
-    {
-      "file": "components/poster/viewer-companion/viewer-companion.tsx",
-      "sha256": "8ed356839096ad1bec094c3b04feb010c99be92c0eef35ef66dded00b4220e42"
-    },
-    {
-      "file": "components/shared/companion-traits.tsx",
-      "sha256": "f1752a11560e794a43d7a52c4113d2789a2a39f842adfa32a5193fe720cb3227"
-    },
-    {
-      "file": "lib/activity/labels.ts",
-      "sha256": "a4fbe927b898043e3e98aad3bd6ef8e578b6a84bfa851f172d3b9aa8389b5f10"
-    },
-    {
-      "file": "lib/legal/privacy-history.ts",
-      "sha256": "e91b0705e581d57d4dbc4175bbb119710755f500851c30121f9822d177ddad77"
-    },
-    {
-      "file": "lib/ui/viewer-companion/behavior-profile.ts",
-      "sha256": "7c30e7dd542627fa70c2ee4cc67326bbb1d92d3450501913d0fd652a3eb35264"
-    },
-    {
-      "file": "lib/ui/viewer-companion/brain.ts",
-      "sha256": "3499e9a2a9e1c4cf4d70398417e5e9b6eadbd831c0eb79f507a586cf06ddb809"
-    },
-    {
-      "file": "lib/ui/viewer-companion/care.ts",
-      "sha256": "bbb0719e5ea3b5602b655c6f5393a079301891df298ee8d12dfab72b290ddfb0"
-    },
-    {
-      "file": "lib/ui/viewer-companion/deliberation.ts",
-      "sha256": "29ad667cb1ddb834b8efcbd2db56aea464dcc94a7dd6e662150210a0948909bc"
-    },
-    {
-      "file": "lib/ui/viewer-companion/individuality-store.ts",
-      "sha256": "54210979170b6c0410ed1860a31194e4005ae97d61d890f68f179ef8b4fed99d"
-    },
-    {
-      "file": "lib/ui/viewer-companion/individuality.ts",
-      "sha256": "be2079f837cfbe469432202a4357498bcc77c3b9ba0a9874f29b29f372680bb8"
-    },
-    {
-      "file": "lib/ui/viewer-companion/interaction-learning.ts",
-      "sha256": "a43717ccd32baa052ff5484ed710243d827f1f8e0b97015931728e103e98817c"
-    },
-    {
-      "file": "lib/ui/viewer-companion/living.ts",
-      "sha256": "a89915a674e6a2577573f469eb11d2d8b399fb2cb6779748fcb9dfa9ffd91dba"
-    },
-    {
-      "file": "lib/ui/viewer-companion/personality-director.ts",
-      "sha256": "e91cf94b5dbaf883ecea814b15ade7b4428c6d9464cdf978a1124c8964b8f15c"
-    },
-    {
-      "file": "lib/ui/viewer-companion/planner.ts",
-      "sha256": "164df42c4bfed1abd6a403e2f87122f7972508885db99f42a6687f7d1325bcfd"
-    },
-    {
-      "file": "lib/ui/viewer-companion/preferences.ts",
-      "sha256": "d1765ed1ef68f02a2c39c361ce7f8ee045a8a6ddf8ed012f7771e1fe6d474d0d"
-    }
-  ]
+  "deployment": "not yet pushed; record actual deployment separately"
 }

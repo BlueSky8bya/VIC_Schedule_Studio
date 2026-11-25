@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBrain, getAction, type CompanionBrain, type Platform } from "@/lib/ui/viewer-companion/brain";
+import { createBrain, getAction, type CompanionAction, type CompanionBrain, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { deliberateCompanionAction } from "@/lib/ui/viewer-companion/deliberation";
 import { advanceCompanionIndividuality, learnCompanionIndividuality, normalizeCompanionIndividuality, type CompanionIndividualContext, type CompanionIndividualExperience } from "@/lib/ui/viewer-companion/individuality";
 import { planCompanionGoal } from "@/lib/ui/viewer-companion/planner";

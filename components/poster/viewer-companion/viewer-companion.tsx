@@ -1,6 +1,6 @@
 "use client";
 
-import { activateCompanionPersonality } from "@/lib/ui/viewer-companion/preferences";
+import { activateCompanionPersonality, getCompanionPreferences, COMPANION_PREFERENCES_EVENT, COMPANION_PREFERENCES_KEY } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_INDIVIDUAL_KEY, companionIndividualityStore } from "@/lib/ui/viewer-companion/individuality-store";
 import { learnCompanionIndividuality, type CompanionIndividualExperience, type CompanionIndividualContext } from "@/lib/ui/viewer-companion/individuality";
 import { createCompanionInteractionLearning } from "@/lib/ui/viewer-companion/interaction-learning";
@@ -201,6 +201,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
   const foodDiscarded = useRef<(id: string) => void>(() => {});
   // Audio sliders do not restart geometry, the brain or decoded body owners.
   const worldPreferencesKey = companionWorldPreferencesKey(preferences);
+  const [individualWorldEpoch, setIndividualWorldEpoch] = useState(0);
   const actorId = useId();
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
@@ -410,10 +411,21 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     const individualStore = companionIndividualityStore();
     brain.current = { ...brain.current, individuality: individualStore?.load(brain.current.habits?.generation ?? 0) };
     const interactionLearning = createCompanionInteractionLearning();
+    let individualLearningCurrent = true;
+    // Settings notifications can precede React's effect cleanup. Cancel before
+    // another direct input can complete a contact from the previous world.
+    const cancelIndividualOnPreferences = () => {
+      const next = companionBehaviorPreferences(getCompanionPreferences(), storedMotion);
+      if (companionWorldPreferencesKey(next) !== worldPreferencesKey) {
+        if (individualLearningCurrent) setIndividualWorldEpoch(value => value + 1);
+        individualLearningCurrent = false; interactionLearning.reset();
+      }
+    };
+    window.addEventListener(COMPANION_PREFERENCES_EVENT, cancelIndividualOnPreferences);
     const individualContext = (): CompanionIndividualContext => isHomeSupport(support) ? "home" : "outside";
     const individualPlace = () => isHomeSupport(support) ? "home" as const : supportById(support)?.kind === "card" ? "card" as const : "floor" as const;
     const learnIndividual = (kind: CompanionIndividualExperience, context = individualContext(), place = individualPlace()) => {
-      if (!preferencesRef.current.enabled || !preferencesRef.current.learnFromYou || preferencesRef.current.animalMode !== "default" || document.hidden) return;
+      if (!individualLearningCurrent || !preferencesRef.current.enabled || !preferencesRef.current.learnFromYou || preferencesRef.current.animalMode !== "default" || document.hidden) return;
       const current = brain.current.individuality;
       if (!current || current.generation !== loadCompanionCare().habits.generation) { interactionLearning.reset(); return; }
       const next = learnCompanionIndividuality(current, kind, context, place, true);
@@ -447,6 +459,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         && (!autonomous || sameCompanionAgentGeneration(epoch.generation, brain.current.habits?.generation ?? 0) && epoch.personality === preferencesRef.current.personality),
     });
     const syncAgentMemory = (event: StorageEvent) => {
+      if (event.key === null || event.key === COMPANION_PREFERENCES_KEY) cancelIndividualOnPreferences();
       if (event.key === null || event.key === COMPANION_INDIVIDUAL_KEY) {
         individualStore?.synchronize(); interactionLearning.reset();
         brain.current = { ...brain.current, individuality: individualStore?.load(brain.current.habits?.generation ?? 0) };
@@ -5483,6 +5496,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       window.removeEventListener(COMPANION_WORK_SIGNAL, workSignal);
       window.removeEventListener("pagehide", sceneDepart);
       window.removeEventListener("storage", syncAgentMemory);
+      window.removeEventListener(COMPANION_PREFERENCES_EVENT, cancelIndividualOnPreferences);
       foodDiscarded.current = () => {};
       window.removeEventListener("blur", focusChanged); window.removeEventListener("focus", focusChanged);
       window.removeEventListener("resize", parkedLayout); window.removeEventListener("scroll", parkedLayout, true); window.removeEventListener("vic:companion-home", parkedLayout);
@@ -5504,7 +5518,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       hideBed();
       el.removeAttribute("data-native-sofa"); front?.removeAttribute("data-native-sofa"); clearSofaNames();
     };
-  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, pathname, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession, sceneMaterial, visibilityRecovery]);
+  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, pathname, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession, sceneMaterial, visibilityRecovery, storedMotion, individualWorldEpoch]);
 
   if (!ready) return null;
   const closeHome = homeShelf.close;

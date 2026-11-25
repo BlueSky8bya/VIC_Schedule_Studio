@@ -207,3 +207,10 @@
 - 새 방침 공개 접기 제어의 G-22 고정 target legal-policy-info와 공용 라벨 추가. 실제 포인터·Enter·Space 각각 native click 1회와 접기 상태 확인. 기존 학습/초기화/성격 target 유지; 학습값·자율 행동은 추가 수집하지 않음. timeline/least-used 양쪽 공용 describeTarget 사용 확인. 최종 typecheck/lint/build 통과. 라벨 연결 뒤 전체 단위 재실행도 489파일·7,482건 전부 통과(112.86초), unit-release-candidate.log.
 - harness:verify FAIL은 기존 실패로 분리: 기준/현재 rule inventory hash 동일, 기준 등록표부터 불일치. 아트46건은 추적 입력/카탈로그 코드 변경 없음·미추적 입력 없음에 따라 기존 드리프트로 판단. 별도 전체 기준 checkout 실행이라 주장하지 않음. 무관한 46개 문서 재생성 없음.
 - 자체 diff 검토 완료. 실제 Next hydration·라우터·전체 화면·실제 로그인/RLS·전 성격 장시간·비작성 독립 통합 검수는 미검증. 통합/푸시/배포 없음. 구현 범위의 검증과 남은 조건: [최종 보고서](../../../runs/20261126-companion-local-personalization/verification.md), [전후 그림](../../../runs/20261126-companion-local-personalization/report.html).
+
+
+## 출시 후보 최종 검수 — 2026-11-26
+
+이 절이 위 초기 미검증/미승인 상태를 대체한다. 사용자가 독립·실제 앱 검수, 문제 수정, GitHub 확인 후 커밋·통합·push·배포를 요청했다. 최신 main5d84a62e까지 반영했다. 비작성자3명 검수에서 발견한5개 문제를 수정하고 재검토했다. 최종 stable 생산 빌드 exit0/제품 소스 전후 hash동일, typecheck/lint exit0, harness462문서PASS, 전체 단위490파일·7,495통과·1skip. 실제 Next SSR/RSC/hydration의14항목, 663요청·쓰기0·개인화canary0·브라우저오류0·서버listen/fetch0. 빠른 OFF→ON과 이전 완료/새 교감 복구까지 실제 chunk로 확인.
+
+실제 native focus 전환은 headless에서 발생하지 않아 미관측이며, 실제 핸들러의 명시focusfixture 취소 검사와 구별한다. 실제 owner 로그인/RLS는 합성 자료로 인증하지 않는다. 생산 배포 및 기존 developer 로그인 세션은 출시 후 검수한다. [최종 근거](../../../runs/20261126-companion-local-personalization/verification.md), [독립 검수](../../../runs/20261126-companion-local-personalization/release-review.md).

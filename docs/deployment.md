@@ -1,5 +1,7 @@
 # VIC Schedule Studio 배포 가이드
 
+> **현재 배포 정본:** [Cloudflare 운영 절차](ops/CLOUDFLARE_MIGRATION.md). 이 문서 아래는 2026-05-24 Vercel 최초 배포 기록이며 현재 출시 명령이 아니다. 현재는 검증한 커밋을 GitHub main에 반영하면 Workers Builds가 빌드·배포한다. 로컬 `cf:deploy`는 `.env.local`이 묶음에 포함될 위험 때문에 금지한다. 옛 Vercel 실패 상태를 현 Cloudflare 배포 실패로 판단하지 않는다.
+
 작성: 2026-05-24 · 대상: 빅토리님 캘린더 정식 배포(공개 링크)
 
 이 문서는 **PC를 항상 켜둘 필요 없는** 방식으로 배포하고, 소유자를 빅토리님으로
