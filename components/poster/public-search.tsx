@@ -40,6 +40,7 @@ import { SearchMonthPicker } from './search-month-picker';
 //   · 정확 적중 뒤 '비슷한 결과' 구분선, 입력 전 요즘 뜨는 말·태그 칩, 곡은 ♪, "N개 더 보기".
 
 const SUGGEST_DEBOUNCE_MS = 120; // 제안 목록(값싼 RPC). 본검색은 Enter 때만(2026-09-18 소유자: 유튜브·구글식).
+const SEARCH_RETRY_DELAYS_MS = [500, 1500]; // 본검색 실패 시 조용한 재시도 간격(총 3번 시도)
 const MIN_CHARS = 1; // 정규화 후 글자 수. 한 글자는 서버가 사전에 있을 때만 결과를 준다(메·롤·숲).
 
 type Props = {
@@ -289,11 +290,22 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
     setFailed(false);
     const run = async () => {
       try {
-        const res = await fetch(`/api/public/${slug}/search?q=${encodeURIComponent(term)}&limit=200`, {
-          signal: ctl.signal
-        });
-        if (!res.ok) throw new Error(String(res.status));
-        const json = (await res.json()) as PublicSearchResult;
+        // 순간 장애(503·끊김)는 사람이 다시 누르기 전에 조용히 두 번 더 해 본다 — 그래도 안 되면 '다시 시도' 단추.
+        let json: PublicSearchResult;
+        for (let attempt = 0; ; attempt += 1) {
+          try {
+            const res = await fetch(`/api/public/${slug}/search?q=${encodeURIComponent(term)}&limit=200`, {
+              signal: ctl.signal
+            });
+            if (!res.ok) throw new Error(String(res.status));
+            json = (await res.json()) as PublicSearchResult;
+            break;
+          } catch (err) {
+            if (ctl.signal.aborted || attempt >= SEARCH_RETRY_DELAYS_MS.length) throw err;
+            await new Promise((resolve) => window.setTimeout(resolve, SEARCH_RETRY_DELAYS_MS[attempt]));
+            if (ctl.signal.aborted) return;
+          }
+        }
         if (ctl.signal.aborted) return;
         resultForRef.current = term;
         completedRef.current = { submitted, revision };
@@ -1005,7 +1017,14 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                 ) : null}
               </div>
             ) : null}
-            {failed ? <p className="ps-hint ps-fail">검색이 잠시 안 돼요. 다시 시도해 주세요.</p> : null}
+            {failed ? (
+              <p className="ps-hint ps-fail" role="alert">
+                검색이 잠시 안 돼요.
+                <button type="button" className="ps-retry" data-act="search-retry" onClick={() => submit(submitted?.trim())}>
+                  다시 시도
+                </button>
+              </p>
+            ) : null}
             {kindEmpty ? <p className="ps-hint" role="status">현재 불러온 결과에 {SEARCH_RESULT_KINDS.find(item=>item.key===kind)?.label} 적중은 없어요. 다른 종류를 골라 보세요.</p> : null}
             {empty ? (
               <p className="ps-hint ps-empty">

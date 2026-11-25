@@ -9463,7 +9463,24 @@ html[data-reduce-motion] .ps-chips { transition: none; }
   color: rgb(35 48 63 / 55%);
 }
 .ps-hint.ps-fail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   color: #b42318;
+}
+.ps-retry {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ps-retry:hover {
+  background: rgb(180 35 24 / 8%);
 }
 .ps-results {
   display: grid;

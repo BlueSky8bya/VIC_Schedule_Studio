@@ -324,6 +324,7 @@ export const ACT: Record<string, TargetLabel> = {
   "mb-search": { name: "검색 열기(모바일)", area: "시청자 화면", hint: "하단 알약 — 옛 '관심' 자리" },
   "close-public-search": { name: "검색 닫기", area: "시청자 화면" },
   "search-clear": { name: "검색어 지우기", area: "시청자 화면" },
+  "search-retry": { name: "검색 다시 시도", area: "시청자 화면", hint: "검색 실패 줄의 단추 — 창을 닫지 않고 같은 말로 다시 찾는다" },
   "search-submit": { name: "검색 실행", area: "시청자 화면" },
   "search-tag-chip": { name: "검색 태그 제안", area: "시청자 화면" },
   "search-sort": { name: "검색 정렬", area: "시청자 화면", hint: "관련도·최신·오래된·인기" },

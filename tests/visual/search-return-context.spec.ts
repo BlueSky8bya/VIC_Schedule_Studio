@@ -23,7 +23,7 @@ async function open(page: Page) {
 async function setup(page: Page, context: BrowserContext, baseURL: string) {
   const proof = await guardCompanionQa(page, context, baseURL);
   const requests: string[] = [];
-  const policy = { fail: false, slow: false, saved: false, removeSelected: false, suggest: false };
+  const policy = { fail: false, failOnce: false, slow: false, saved: false, removeSelected: false, suggest: false };
   await context.route("**/api/public/*/search**", async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.origin !== new URL(baseURL).origin || request.method() !== "GET") return route.fallback();
@@ -32,6 +32,7 @@ async function setup(page: Page, context: BrowserContext, baseURL: string) {
     if (!url.pathname.endsWith("/search")) return route.fallback();
     const q = url.searchParams.get("q") ?? ""; requests.push(q);
     if (policy.fail) return route.fulfill({ status: 503, json: {} });
+    if (policy.failOnce) { policy.failOnce = false; return route.fulfill({ status: 503, json: {} }); }
     if (policy.slow && q === "느린검색") await new Promise(resolve => setTimeout(resolve, 650));
     await route.fulfill({ json: { query: q, hits: Array.from({ length: 28 }, (_, i) => ({ kind: "event", eventId: i === 0 ? "evt-001" : `synthetic-${i}`,
       dateKey: `2026-06-${String(i+1).padStart(2,"0")}`, startTime: "20:00", title: `${q} ${policy.saved ? "갱신" : "결과"} ${i+1}`,
@@ -97,11 +98,15 @@ test("search return: repeated term retry survives a failed refresh and supersede
   const { proof, requests, policy } = await setup(page,context,baseURL!);
   await page.goto("/visual-fixture/poster"); await settlePanelLayout(page); await open(page);
   await input(page).fill("같은검색"); await input(page).press("Enter"); await expect(dialog(page).locator(".ps-event")).toHaveCount(28);
-  policy.fail = true; await input(page).press("Enter"); await expect.poll(() => requests.length).toBe(2);
+  // 실패는 조용히 두 번 더 해 본 뒤(요청 3번)에만 보이고, 창을 닫지 않고 '다시 시도' 단추로 되살린다.
+  policy.fail = true; await input(page).press("Enter"); await expect.poll(() => requests.length).toBe(4);
   await expect(dialog(page).locator(".ps-fail")).toBeVisible();
-  policy.fail = false; await input(page).press("Enter"); await expect.poll(() => requests.length).toBe(3);
-  await expect(dialog(page).locator(".ps-fail")).toHaveCount(0);
-  policy.slow = true; await input(page).fill("느린검색"); await input(page).press("Enter"); await expect.poll(() => requests.length).toBe(4);
+  policy.fail = false; await dialog(page).getByRole("button", { name: "다시 시도", exact: true }).click(); await expect.poll(() => requests.length).toBe(5);
+  await expect(dialog(page).locator(".ps-fail")).toHaveCount(0); await expect(dialog(page).locator(".ps-event")).toHaveCount(28);
+  // 한 번만 실패한 순간 장애는 사람 눈에 실패로 보이지 않는다.
+  policy.failOnce = true; await input(page).press("Enter"); await expect.poll(() => requests.length).toBe(7);
+  await expect(dialog(page).locator(".ps-fail")).toHaveCount(0); await expect(dialog(page).locator(".ps-event")).toHaveCount(28);
+  policy.slow = true; await input(page).fill("느린검색"); await input(page).press("Enter"); await expect.poll(() => requests.length).toBe(8);
   await input(page).fill("마지막검색"); await input(page).press("Enter");
   await expect(dialog(page).locator(".ps-event").first()).toContainText("마지막검색");
   await page.waitForTimeout(800); await expect(dialog(page).locator(".ps-event").first()).toContainText("마지막검색");
