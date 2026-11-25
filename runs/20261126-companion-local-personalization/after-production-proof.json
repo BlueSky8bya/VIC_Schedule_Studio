@@ -1,0 +1,47 @@
+{
+  "phase": "after",
+  "domain": "https://victory-broadcast.com",
+  "automaticDisclosure": "함께 지내는 빅타민의 성격은 다음에 와도 이어져요.\n\n무작위로 되돌리기",
+  "errors": [],
+  "writes": 0,
+  "blockedNonGET": [
+    {
+      "path": "/cdn-cgi/rum",
+      "method": "POST"
+    },
+    {
+      "path": "/",
+      "method": "POST"
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "method": "POST"
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "method": "POST"
+    },
+    {
+      "path": "/",
+      "method": "POST"
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "method": "POST"
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "method": "POST"
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "method": "POST"
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "method": "POST"
+    }
+  ],
+  "requests": 360,
+  "scope": "anonymous real deployed browser; local preferences only; no login/DB mutations"
+}

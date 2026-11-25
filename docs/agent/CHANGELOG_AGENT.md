@@ -8,7 +8,7 @@
 
 ### CHG-20261126-001 — Local companion individuality and policy clarity
 
-Local implementation on codex/companion-local-personalization; not integrated or deployed. Optional device memory settles automatic temperament and learns bounded interaction tendencies without modifying existing preferences/care/assets or uploading data. Existing OFF/reset gates apply. Privacy clarification stays static/public; operational history uses an actual-developer server check. Recovery: scoped code revert, leave the optional local key unused; no DB operation. Verification and outstanding renderer/review gates: [plan](plans/PLAN-20261126-companion-local-personalization.md), [decision](decisions/ADR-0032-companion-local-individuality.md).
+Released via PR1 merge0492b95e and successful Workers Builds version1d097d7c-b09e-4a3d-9585-51ad771a8fe7 on2026-11-26; PR/main quality and anonymous production smoke passed. Optional device memory settles automatic temperament and learns bounded interaction tendencies without modifying existing preferences/care/assets or uploading data. Existing OFF/reset gates apply. Privacy clarification stays static/public; operational history uses an actual-developer server check. Recovery: scoped code revert, leave the optional local key unused; no DB operation. Independent review repairs, actual Next14-case regression and remaining real-login/native-focus limits: [plan](plans/PLAN-20261126-companion-local-personalization.md), [decision](decisions/ADR-0032-companion-local-individuality.md).
 
 ## v0.1.0 — 2026-10-25
 

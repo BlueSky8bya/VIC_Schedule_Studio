@@ -1,0 +1,40 @@
+{
+  "releasedCommit": "0492b95efa944c7351c732e2addb6a031bb63135",
+  "featureHead": "bc55f65cbb6b6ccf3b730107bf66d26b45fc5838",
+  "workersVersion": "1d097d7c-b09e-4a3d-9585-51ad771a8fe7",
+  "workersBuildId": "2f54bdb3-7ad5-4c4d-b3d0-f11c823925b5",
+  "githubPR": 1,
+  "prQuality": "success",
+  "mainQuality": "success",
+  "workersBuild": "success",
+  "productionAnonymousSmoke": "PASS, 360 requests, pageerrors0, all non-GET blocked",
+  "actualAuthenticatedDeveloper": {
+    "settingsDeveloperTabVisible": true,
+    "historyVisible": "NOT VERIFIED: CDP deadline then browser session released",
+    "settingsChanged": false,
+    "productionDataMutated": false
+  },
+  "remaining": [
+    "Push final documentation and remove clean worktree; final outcome recorded in the preserved Hub release.json"
+  ],
+  "limits": [
+    "Actual owner Google login/RLS not certified by synthetic role props",
+    "Headless native blur not observed; explicit focus fixture handler passed",
+    "localStorage optimistic stamp is not an atomic cross-process transaction"
+  ],
+  "completionChecks": {
+    "harnessDocuments": 462,
+    "memoryTests": 18,
+    "report": {
+      "pairs": 8,
+      "decodedImages": 16,
+      "widths": [
+        1440,
+        390
+      ],
+      "overflow": false
+    },
+    "documentationBase": "f3fa2efcc86a838ff21dde4d997ade05f17b2f22",
+    "scope": "Documentation and delivery evidence only; prior product verification remains scoped to 0492b95e. Upstream dependency/visual changes were fast-forwarded without modification."
+  }
+}
