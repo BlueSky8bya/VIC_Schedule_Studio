@@ -65,6 +65,22 @@ describe("buildLinkChain prefers the already-linked next card", () => {
   });
 });
 
+describe("buildLinkChain reaches the card the drag aims at", () => {
+  // 2026-11-25 실제 사례: 25일에 같은 색 일정이 둘 — 배열 앞쪽 카드가 먼저 잡혀 고른 카드는 이을 수 없었다.
+  const events = [
+    ev({ id: "a", day: "2026-06-10" }),
+    ev({ id: "b1", day: "2026-06-11" }),
+    ev({ id: "b2", day: "2026-06-11", sortOrder: 1 })
+  ];
+  it("links to either same-colour card on the next day, whichever is aimed at", () => {
+    expect(buildLinkChain(events[0], events[1], events)).toEqual(["a", "b1"]);
+    expect(buildLinkChain(events[0], events[2], events)).toEqual(["a", "b2"]);
+  });
+  it("works the same when dragging back from the later card", () => {
+    expect(buildLinkChain(events[2], events[0], events)).toEqual(["a", "b2"]);
+  });
+});
+
 describe("dropHistoryEntry — removes a pasted piece inside its group", () => {
   it("drops the nested entry, keeps the group object, and removes an emptied group", () => {
     const a: UndoAction = { type: "remove", holder: { id: "a" } };

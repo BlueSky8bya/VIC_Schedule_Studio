@@ -774,7 +774,9 @@ export function buildLinkChain<T extends PublicScheduleEvent | StudioScheduleEve
     // 이미 이어 둔 다음 카드가 조건에 맞으면 그것부터 — 같은 날 같은 색 일정이 둘이어도 기존 묶음을 갈아 끼우지 않는다
     // (이어진 묶음의 머리·가운데에서 끌어 늘릴 때 중간 고리가 다른 카드로 바뀌던 위험, 2026-11-19).
     const linked = cur.linkNext ? allEvents.find((e) => e.id === cur.linkNext) : undefined;
-    const next = linked && fits(linked) ? linked : allEvents.find(fits);
+    // 닿으려는 카드가 바로 다음 날이면 그 카드로 — 같은 날 같은 색 일정이 둘이면 배열 앞쪽 카드를 먼저 잡아 그 뒤로 길이
+    // 끊기고, 정작 고른 카드는 이을 수 없는 상대로 흐려졌다(2026-11-25 소유자: 24일·25일 '와우 포에버'가 안 이어짐).
+    const next = fits(to) ? to : linked && fits(linked) ? linked : allEvents.find(fits);
     if (!next) {
       return null; // 연속이 끊기거나 맞닿는 색·구성이 다름
     }
