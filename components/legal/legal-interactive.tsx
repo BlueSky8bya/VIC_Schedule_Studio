@@ -428,7 +428,7 @@ export function ContactButton({ variant, initialTopic = "bug", trigger }: {
                     <Clock3 aria-hidden="true" size={14} />
                   </span>
                   <span>
-                    <b>보관</b> 처리 완료 후 {REPORT_RETENTION_DAYS}일 뒤(처리 전이어도 {REPORT_UNHANDLED_RETENTION_DAYS}일 뒤) 캡처와 함께 자동 삭제 · 방송인과 개발자만 봅니다
+                    <b>보관</b> 처리 완료 후 {REPORT_RETENTION_DAYS}일 뒤(처리 전이어도 {REPORT_UNHANDLED_RETENTION_DAYS}일 뒤) 캡처와 함께 자동 삭제 · 개발자만 봅니다
                   </span>
                 </li>
                 <li>

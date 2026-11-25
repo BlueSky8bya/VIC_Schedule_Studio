@@ -7650,7 +7650,7 @@ export function StudioShell({
           previewNav={previewNav}
           premiereEnabled={previewReady}
           canRehearsePremiere={actor.role === "developer" && effectiveRole === "developer"}
-          showReportInbox={canEditSchedule(actor.role)}
+          showReportInbox={actor.role === "developer"}
           schedule={previewSchedule}
           // "n명이 기다렸어요" 배지는 당분간 개발자 확인용만(사용자 결정 — 카운팅은 쌓되
           // 관리자·시청자에겐 아직 비노출). 역할 미리보기(effectiveRole)가 아니라 실제 역할 기준.
@@ -7940,7 +7940,7 @@ export function StudioShell({
           <ThemeToggleButton dataAct="studio-theme-toggle" />
           {/* 개발자만 — 아직 보지 않은 사이트 제보 수(PC 헤더만, 2026-11-13 소유자). */}
           {/* 관리자 화면 미리보기 중에는 숨긴다 — 미리보기는 그 역할이 보는 그대로(2026-11-13 소유자 "관리자한테는 안 보여야"). */}
-          {canEditSchedule(actor.role) && !previewRole ? <ReportInboxButton /> : null}
+          {actor.role === "developer" && !previewRole ? <ReportInboxButton /> : null}
           {companionDesktop && companionPrefs.enabled ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
         </div>
 

@@ -1,8 +1,6 @@
 "use client";
 
-import { Inbox, KeyRound, Lock } from "lucide-react";
-import Link from "next/link";
-import type { Route } from "next";
+import { KeyRound, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { RowLabel } from "@/components/shared/settings-controls";
 import { getOwnerSecurityAction, type OwnerSecurityData } from "@/lib/insights/actions";
@@ -90,18 +88,6 @@ export function SecurityPanel({ onChangePasscode }: { onChangePasscode: () => vo
         </div>
       </div>
       <p className="rhh-group-foot">편집실에서 최초공개 일정을 열 때 묻는 비밀번호예요.</p>
-      {/* 사이트 제보함(0167) — 관리자·개발자(2026-11-23 소유자). 모바일에는 헤더 단추가 없어 여기가 입구다. */}
-      <div className="rhh-group-card">
-        <div className="role-help-haptics">
-          <RowLabel icon={<Inbox size={15} />} tone="metal">
-            사이트 제보함
-          </RowLabel>
-          <Link className="rhh-link" data-act="security-reports-open" href={"/studio/reports" as Route}>
-            <span className="vmid">열기</span>
-          </Link>
-        </div>
-      </div>
-      <p className="rhh-group-foot">시청자가 보낸 버그·일정 오류 제보예요. 처리하지 않아도 180일 뒤 자동으로 지워져요.</p>
     </>
   );
 }

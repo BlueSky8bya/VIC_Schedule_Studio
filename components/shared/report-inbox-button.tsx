@@ -7,7 +7,7 @@ import { Inbox } from "lucide-react";
 import { getUnseenReportCountAction } from "@/lib/reports/actions";
 import "./report-inbox-button.css";
 
-// 사이트 제보함 단추(2026-11-13 소유자) — 관리자·개발자에게, PC 헤더의 설정·밝기 토글 옆(같은 44px). 아직 보지 않은 제보 수를
+// 사이트 제보함 단추(2026-11-13 소유자) — 개발자에게만(2026-11-25 소유자: 관리자에게는 안 보인다), PC 헤더의 설정·밝기 토글 옆(같은 44px). 아직 보지 않은 제보 수를
 // 배지로. 1분마다·창으로 돌아올 때 다시 센다. 모바일은 자리가 좁아 두지 않는다(설정 → 개발자 → 사이트 제보함).
 const POLL_MS = 60_000;
 

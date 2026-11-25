@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// 사이트 제보함 권한·보관(2026-11-23 소유자): 관리자도 보고 처리할 수 있지만 답장 발송은 개발자만,
-// 관리자는 새 안내 이후 제보만 세고, 아무도 처리하지 않은 제보도 받은 지 180일 뒤 지워진다.
+// 사이트 제보함 권한·보관: 보기·처리·삭제·답장 모두 개발자만(2026-11-25 소유자 — 관리자에게는 보이지 않는다),
+// 아무도 처리하지 않은 제보도 받은 지 180일 뒤 지워진다(2026-11-23 소유자).
 const h = vi.hoisted(() => ({
   role: "viewer" as "viewer" | "owner" | "developer",
   rows: [] as { id: string; images: string[]; done_at: string | null; created_at: string; seen_at: string | null }[],
@@ -50,31 +50,26 @@ beforeEach(() => {
 });
 
 describe("report inbox access", () => {
-  it("lets the owner handle reports but keeps reply sending developer-only", async () => {
-    const actions = await import("@/lib/reports/actions");
-    h.role = "viewer";
-    expect(await actions.getUnseenReportCountAction()).toBeNull();
-    expect((await actions.deleteReportAction("a")).ok).toBe(false);
-    h.role = "owner";
-    expect(await actions.getUnseenReportCountAction()).toBe(0);
-    expect((await actions.setReportDoneAction("a", true)).ok).toBe(true);
-    expect(await actions.sendReplyAction("a", "제목", "본문")).toEqual({ ok: false, reason: "denied" });
-    expect(h.sent).toEqual([]);
-    h.role = "developer";
-    expect(await actions.sendReplyAction("a", "제목", "본문")).toEqual({ ok: true });
-    expect(h.sent).toEqual(["viewer@example.com"]);
-  });
-
-  it("counts only reports sent under the new notice for the owner", async () => {
+  it("keeps the whole inbox developer-only — the owner can neither count, handle nor reply", async () => {
     const actions = await import("@/lib/reports/actions");
     h.rows = [
       { id: "old", images: [], done_at: null, created_at: "2026-11-20T03:00:00.000Z", seen_at: null },
       { id: "new", images: [], done_at: null, created_at: "2026-11-23T03:00:00.000Z", seen_at: null }
     ];
-    h.role = "owner";
-    expect(await actions.getUnseenReportCountAction()).toBe(1);
+    for (const role of ["viewer", "owner"] as const) {
+      h.role = role;
+      expect(await actions.getUnseenReportCountAction()).toBeNull();
+      expect((await actions.setReportDoneAction("old", true)).ok).toBe(false);
+      expect((await actions.setReportRepliedAction("old", true)).ok).toBe(false);
+      expect((await actions.deleteReportAction("old")).ok).toBe(false);
+      expect(await actions.sendReplyAction("old", "제목", "본문")).toEqual({ ok: false, reason: "denied" });
+    }
+    expect(h.sent).toEqual([]);
+    expect(h.deleted).toEqual([]);
     h.role = "developer";
     expect(await actions.getUnseenReportCountAction()).toBe(2);
+    expect(await actions.sendReplyAction("old", "제목", "본문")).toEqual({ ok: true });
+    expect(h.sent).toEqual(["viewer@example.com"]);
   });
 });
 
