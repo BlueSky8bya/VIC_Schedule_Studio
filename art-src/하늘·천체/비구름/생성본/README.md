@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 77db1d7dad5888958327ad4907bdfaf92dca77767ef3a363dc31294e510fd962 -->
-<!-- source-sha256: 6df27b2c04536ebe5a648cd345b8311256c5971cbb5dce59cf9747a3201286ed; state-sha256: 6fd8c3dd9057a6578a4e1a7c5dfd908ea6f0a4b222b72d631810086620e0b972 -->
+<!-- content-sha256: 62022f82cb44c3d8ef7cd6f66a176ff2f4c617de2c61770e50a0be11b74b65b8 -->
+<!-- source-sha256: a87dbad1438c964a8a802e14f878bca2c02df9d64f9086d3b5f573a0b30fc90c; state-sha256: 6fd8c3dd9057a6578a4e1a7c5dfd908ea6f0a4b222b72d631810086620e0b972 -->
 
 # cloud-storm 생성본
 

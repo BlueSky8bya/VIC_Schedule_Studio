@@ -465,7 +465,9 @@ ID 추가·삭제·중복 또는 소유 파일 변경 시 이 표와 해시를 �
 
 2026-10-18 소유자 추가: G-22는 새 기능/버튼의 행동 타임라인·적게 쓰인 기능 점검을 자동 완료 기준으로 삼으라는 현재 요청에서 신설했다.589행 과거 원문에서 이관한 규칙이 아니므로 원문 대응 행은 유지하고 현행 재고만 추가한다. 개인정보 제한과 자동 행동 제외는 G-07/G-20을 그대로 따른다.
 
-Rule inventory SHA-256: 8ccd71dd803f6a57b634680c014b8e04dc51be4807a05193fbae49bc21bae35f
+2026-11-26 재고 갱신: UI-44(생일 선물 카드·캡슐 뽑기)는 2026-11-23 소유자 결정으로 철거되어 활성 규칙에서 빠졌고, UI-46~UI-51(2026-11-23~24 소유자 요청: GPU 없이도 부드럽게·다시보기 날짜·끝난 업 도움·묶음 끌기·줄바뀜 끝·첫 화면 코드 무게)은 새로 생긴 현행 규칙이다. 589행 과거 원문에서 이관한 규칙이 아니므로 원문 대응 행은 그대로 두고 현행 재고만 맞춘다.
+
+Rule inventory SHA-256: 6dbaea5cf6e7506457d7019bbb2a92be5ed0c6f421affb35355cb2c7a413bf67
 
 <!-- rule-migration:inventory:start -->
 | 규칙 ID | 현행 문서 |
@@ -578,6 +580,11 @@ Rule inventory SHA-256: 8ccd71dd803f6a57b634680c014b8e04dc51be4807a05193fbae49bc
 | UI-41 | docs/ux/UI_RULES.md |
 | UI-42 | docs/ux/UI_RULES.md |
 | UI-43 | docs/ux/UI_RULES.md |
-| UI-44 | docs/ux/UI_RULES.md |
 | UI-45 | docs/ux/UI_RULES.md |
+| UI-46 | docs/ux/UI_RULES.md |
+| UI-47 | docs/ux/UI_RULES.md |
+| UI-48 | docs/ux/UI_RULES.md |
+| UI-49 | docs/ux/UI_RULES.md |
+| UI-50 | docs/ux/UI_RULES.md |
+| UI-51 | docs/ux/UI_RULES.md |
 <!-- rule-migration:inventory:end -->
